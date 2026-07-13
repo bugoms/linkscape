@@ -46,11 +46,20 @@ export default function BoardClient(props: {
 
   useEffect(() => installFlushOnUnload(), []);
 
-  const isEmpty = props.items.length === 0 && props.frames.length === 0;
+  // 스토어 기준으로 실시간 판정 — 첫 카드가 생기는 순간 안내가 사라진다.
+  // (init 전에는 boardId 가 비어 있으므로 잘못 떠 있지 않는다)
+  const ready = useBoard((s) => s.boardId !== "");
+  const storeEmpty = useBoard(
+    (s) =>
+      Object.keys(s.frames).length === 0 &&
+      !Object.values(s.items).some((i) => i.status === "active"),
+  );
 
   return (
     <ReactFlowProvider>
-      <div className="flex h-dvh flex-col">
+      <div className="relative h-dvh">
+        <Canvas onOpenSearch={() => setSearchOpen(true)} />
+
         <Toolbar
           boardTitle={props.boardTitle}
           userEmail={props.userEmail}
@@ -58,12 +67,9 @@ export default function BoardClient(props: {
           onOpenTrash={() => setTrashOpen(true)}
         />
 
-        <div className="relative min-h-0 flex-1">
-          <Canvas onOpenSearch={() => setSearchOpen(true)} />
-          <TagFilterBar />
-          <Inspector />
-          {isEmpty && <EmptyHint />}
-        </div>
+        <TagFilterBar />
+        <Inspector />
+        {ready && storeEmpty && <EmptyHint />}
       </div>
 
       {searchOpen && <SearchPalette onClose={() => setSearchOpen(false)} />}
@@ -84,7 +90,7 @@ function TagFilterBar() {
   if (tags.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute left-5 top-5 z-20 flex max-w-[60%] flex-wrap items-center gap-1.5">
+    <div className="pointer-events-none absolute left-4 top-[84px] z-20 flex max-w-[60%] flex-wrap items-center gap-1.5">
       {tags.map((tag) => {
         const active = activeTagIds.includes(tag.id);
         return (
@@ -118,15 +124,15 @@ function TagFilterBar() {
 function EmptyHint() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-      <div className="max-w-[520px] px-6 text-center">
-        <h2 className="text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink">
+      <div className="glass-float w-full max-w-[520px] rounded-apple-lg px-10 py-9 text-center">
+        <h2 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.02em] text-ink">
           빈 캔버스입니다.
         </h2>
-        <p className="mt-3 text-[21px] leading-[1.3] text-ink-48">
+        <p className="mt-2 text-[18px] leading-[1.35] text-ink-48">
           링크와 PDF를 여기에 던져 넣으세요.
         </p>
 
-        <ul className="mx-auto mt-10 max-w-[400px] space-y-2.5 text-left text-[15px] text-ink-80">
+        <ul className="mx-auto mt-8 max-w-[400px] space-y-2.5 text-left text-[15px] text-ink-80">
           <Hint keys="Ctrl+V">복사한 링크를 마우스 자리에 카드로</Hint>
           <Hint>PDF · 이미지 파일을 캔버스로 드래그앤드롭</Hint>
           <Hint>빈 곳을 더블클릭하면 메모 카드</Hint>

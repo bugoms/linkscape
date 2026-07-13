@@ -7,6 +7,7 @@ import {
   MarkerType,
   MiniMap,
   ReactFlow,
+  SelectionMode,
   useReactFlow,
   type Connection,
   type Edge,
@@ -21,12 +22,14 @@ import { extractUrls } from "@/lib/url";
 import { useBoard } from "@/store/board";
 import { useSelection } from "@/store/selection";
 
+import ContextMenu, { type MenuEntry } from "./ContextMenu";
 import FrameNode from "./nodes/FrameNode";
 import ImageNode from "./nodes/ImageNode";
 import LinkNode from "./nodes/LinkNode";
 import NoteNode from "./nodes/NoteNode";
 import PdfNode from "./nodes/PdfNode";
 import type { AppNode, FrameNodeType, ItemNodeType } from "./nodes/types";
+import { useBoardActions } from "./useBoardActions";
 import { useIngest } from "./useIngest";
 
 const nodeTypes = {
@@ -36,6 +39,11 @@ const nodeTypes = {
   note: NoteNode,
   frame: FrameNode,
 };
+
+type MenuState =
+  | { kind: "node"; id: string; x: number; y: number }
+  | { kind: "edge"; id: string; x: number; y: number }
+  | { kind: "pane"; x: number; y: number; flow: Point };
 
 function isTypingTarget(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -63,7 +71,9 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
   const undo = useBoard((s) => s.undo);
   const redo = useBoard((s) => s.redo);
 
-  const { addLinks, addFiles, addNote } = useIngest();
+  const { addLinks, addFiles, addNote, addFrame } = useIngest();
+  const { deleteSelected, duplicateSelected, deleteEdge, openItem } =
+    useBoardActions();
 
   const selectedNodeIds = useSelection((s) => s.nodeIds);
   const selectedEdgeIds = useSelection((s) => s.edgeIds);
@@ -71,8 +81,11 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
   const setSelectedEdgeIds = useSelection((s) => s.setEdgeIds);
 
   const [dragOver, setDragOver] = useState(false);
+  const [menu, setMenu] = useState<MenuState | null>(null);
 
   const pointerRef = useRef<{ x: number; y: number } | null>(null);
+  /** 우클릭 팬과 우클릭 메뉴를 구분하기 위한 버튼 눌린 위치 */
+  const rightDownRef = useRef<{ x: number; y: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   /* --------------------------------------------------------------------- */
@@ -318,83 +331,29 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
     return () => window.removeEventListener("paste", onPaste);
   }, [addFiles, addLinks, addNote, pointerFlowPosition]);
 
-  const deleteSelected = useCallback(() => {
-    const nodeIds = [...selectedNodeIds];
-    const edgeIds = [...selectedEdgeIds];
-    if (nodeIds.length === 0 && edgeIds.length === 0) return;
-
-    apply((d) => {
-      for (const id of nodeIds) {
-        const frame = d.frames[id];
-        if (frame) {
-          // 프레임만 지우고 안의 카드는 절대좌표로 남긴다 (같이 지우지 않는다)
-          for (const item of Object.values(d.items)) {
-            if (item.frame_id !== frame.id) continue;
-            d.items[item.id] = {
-              ...item,
-              frame_id: null,
-              x: frame.x + item.x,
-              y: frame.y + item.y,
-            };
-          }
-          delete d.frames[id];
-          continue;
+  /** 우클릭 메뉴의 "붙여넣기" — 클립보드 텍스트를 읽어 링크/메모 카드로 만든다. */
+  const pasteFromClipboard = useCallback(
+    async (at: Point) => {
+      try {
+        const text = await navigator.clipboard.readText();
+        const urls = extractUrls(text);
+        if (urls.length > 0) {
+          addLinks(urls, at);
+          return;
         }
-
-        const item = d.items[id];
-        if (item) d.items[id] = { ...item, status: "trashed" };
-      }
-
-      for (const id of edgeIds) delete d.edges[id];
-
-      // 휴지통으로 간 카드에 붙어 있던 연결선 정리
-      for (const edge of Object.values(d.edges)) {
-        const source = d.items[edge.source_item_id];
-        const target = d.items[edge.target_item_id];
-        if (
-          !source ||
-          source.status !== "active" ||
-          !target ||
-          target.status !== "active"
-        ) {
-          delete d.edges[edge.id];
+        if (text.trim()) {
+          const note = addNote(at);
+          useBoard.getState().apply((d) => {
+            const target = d.items[note.id];
+            if (target) d.items[note.id] = { ...target, note: text.trim() };
+          });
         }
+      } catch {
+        // 클립보드 권한이 없으면 조용히 무시한다 (Ctrl+V 는 여전히 동작)
       }
-    });
-
-    setSelectedNodeIds(new Set());
-    setSelectedEdgeIds(new Set());
-  }, [
-    apply,
-    selectedNodeIds,
-    selectedEdgeIds,
-    setSelectedNodeIds,
-    setSelectedEdgeIds,
-  ]);
-
-  const duplicateSelected = useCallback(() => {
-    if (selectedNodeIds.size === 0) return;
-    const created: string[] = [];
-
-    apply((d) => {
-      for (const id of selectedNodeIds) {
-        const item = d.items[id];
-        if (!item || item.status !== "active") continue;
-        const copy = {
-          ...item,
-          id: crypto.randomUUID(),
-          x: item.x + 24,
-          y: item.y + 24,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        d.items[copy.id] = copy;
-        created.push(copy.id);
-      }
-    });
-
-    if (created.length > 0) setSelectedNodeIds(new Set(created));
-  }, [apply, selectedNodeIds, setSelectedNodeIds]);
+    },
+    [addLinks, addNote],
+  );
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -453,6 +412,64 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
   ]);
 
   /* --------------------------------------------------------------------- */
+  /* 우클릭 메뉴                                                             */
+  /* --------------------------------------------------------------------- */
+
+  function menuEntries(current: MenuState): MenuEntry[] {
+    if (current.kind === "pane") {
+      const at = current.flow;
+      return [
+        { label: "메모 추가", onClick: () => void addNote(at) },
+        { label: "그룹 추가", onClick: () => void addFrame(at) },
+        { label: "붙여넣기", onClick: () => void pasteFromClipboard(at) },
+        "divider",
+        {
+          label: "화면 맞추기",
+          onClick: () => void fitView({ duration: 300, padding: 0.25 }),
+        },
+      ];
+    }
+
+    if (current.kind === "edge") {
+      return [
+        {
+          label: "연결선 삭제",
+          danger: true,
+          onClick: () => deleteEdge(current.id),
+        },
+      ];
+    }
+
+    const count = Math.max(selectedNodeIds.size, 1);
+    const item = items[current.id];
+    const frame = frames[current.id];
+    const entries: MenuEntry[] = [];
+
+    if (count === 1 && item) {
+      if (item.kind === "pdf" || item.kind === "image") {
+        entries.push({ label: "열기", onClick: () => openItem(current.id) });
+      } else if (item.url) {
+        entries.push({ label: "원본 열기 ↗", onClick: () => openItem(current.id) });
+      }
+    }
+
+    if (item || count > 1) {
+      entries.push({
+        label: count > 1 ? `복제 (${count})` : "복제",
+        onClick: duplicateSelected,
+      });
+    }
+
+    if (entries.length > 0) entries.push("divider");
+    entries.push({
+      label: count > 1 ? `삭제 (${count})` : frame ? "그룹 삭제" : "삭제",
+      danger: true,
+      onClick: deleteSelected,
+    });
+    return entries;
+  }
+
+  /* --------------------------------------------------------------------- */
 
   return (
     <div
@@ -460,6 +477,27 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
       className="relative h-full w-full"
       onMouseMove={(e) => {
         pointerRef.current = { x: e.clientX, y: e.clientY };
+      }}
+      onPointerDownCapture={(e) => {
+        if (e.button === 2) rightDownRef.current = { x: e.clientX, y: e.clientY };
+      }}
+      onContextMenu={(e) => {
+        if (isTypingTarget(e.target)) return; // 입력 중에는 브라우저 기본 메뉴
+        e.preventDefault();
+
+        const target = e.target as HTMLElement;
+        if (!target.classList.contains("react-flow__pane")) return; // 노드/엣지는 RF 콜백이 처리
+
+        // 우클릭 드래그로 팬을 한 직후라면 메뉴를 띄우지 않는다
+        const start = rightDownRef.current;
+        if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) return;
+
+        setMenu({
+          kind: "pane",
+          x: e.clientX,
+          y: e.clientY,
+          flow: screenToFlowPosition({ x: e.clientX, y: e.clientY }),
+        });
       }}
       onDragOver={(e) => {
         e.preventDefault();
@@ -503,10 +541,30 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
         onNodeDragStop={(_, __, dragged) => settleDrag(dragged)}
         onSelectionDragStart={beginInteraction}
         onSelectionDragStop={(_, dragged) => settleDrag(dragged)}
+        onNodeContextMenu={(event, node) => {
+          if (isTypingTarget(event.target)) return;
+          event.preventDefault();
+          if (!useSelection.getState().nodeIds.has(node.id)) {
+            setSelectedNodeIds(new Set([node.id]));
+            setSelectedEdgeIds(new Set());
+          }
+          setMenu({ kind: "node", id: node.id, x: event.clientX, y: event.clientY });
+        }}
+        onEdgeContextMenu={(event, edge) => {
+          event.preventDefault();
+          setMenu({ kind: "edge", id: edge.id, x: event.clientX, y: event.clientY });
+        }}
+        onSelectionContextMenu={(event, selectedNodes) => {
+          event.preventDefault();
+          const first = selectedNodes[0];
+          if (!first) return;
+          setMenu({ kind: "node", id: first.id, x: event.clientX, y: event.clientY });
+        }}
         deleteKeyCode={null}
         multiSelectionKeyCode={["Shift", "Meta", "Control"]}
         selectionKeyCode={null}
-        panOnDrag={[0, 1]}
+        selectionMode={SelectionMode.Partial}
+        panOnDrag={[1, 2]}
         selectionOnDrag
         panOnScroll
         zoomOnScroll={false}
@@ -543,6 +601,15 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
             여기에 놓으면 카드가 됩니다 (PDF · 이미지)
           </span>
         </div>
+      )}
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          entries={menuEntries(menu)}
+          onClose={() => setMenu(null)}
+        />
       )}
     </div>
   );

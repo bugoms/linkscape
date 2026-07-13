@@ -7,7 +7,9 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { extractUrls } from "@/lib/url";
 import { flush, useBoard } from "@/store/board";
+import { useSelection } from "@/store/selection";
 
+import { useBoardActions } from "./useBoardActions";
 import { useIngest } from "./useIngest";
 
 export default function Toolbar({
@@ -30,6 +32,11 @@ export default function Toolbar({
   const redo = useBoard((s) => s.redo);
   const canUndo = useBoard((s) => s.undoStack.length > 0);
   const canRedo = useBoard((s) => s.redoStack.length > 0);
+
+  const { deleteSelected } = useBoardActions();
+  const hasSelection = useSelection(
+    (s) => s.nodeIds.size > 0 || s.edgeIds.size > 0,
+  );
 
   const [url, setUrl] = useState("");
 
@@ -57,7 +64,7 @@ export default function Toolbar({
   }
 
   return (
-    <header className="z-20 flex h-[52px] shrink-0 items-center gap-2 border-b border-hairline bg-canvas/80 px-4 backdrop-blur-xl backdrop-saturate-150">
+    <header className="glass-float absolute inset-x-4 top-4 z-30 flex h-[52px] items-center gap-2 rounded-apple-lg px-4">
       <span className="select-none text-[21px] font-semibold tracking-[-0.02em] text-ink">
         pdflinkin
       </span>
@@ -77,6 +84,12 @@ export default function Toolbar({
 
       <Utility onClick={() => addNote(center())}>메모</Utility>
       <Utility onClick={() => addFrame(center())}>그룹</Utility>
+
+      <Divider />
+
+      <Utility onClick={deleteSelected} disabled={!hasSelection} title="Delete">
+        삭제
+      </Utility>
 
       <Divider />
 

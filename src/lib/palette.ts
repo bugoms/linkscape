@@ -17,8 +17,8 @@ export const COLOR_TOKENS: ColorToken[] = [
 
 /**
  * 카드 색은 "분류"지 "액션"이 아니다.
- * 그래서 전부 흰 종이에 가까운 옅은 틴트로만 쓰고, 누를 수 있다는 신호(Action Blue)와
- * 절대 헷갈리지 않게 한다. 그림자는 없고 헤어라인만으로 면을 만든다.
+ * 면은 항상 흰 종이(bg-canvas)로 두고, 색은 외곽선으로만 구분한다 — 칸을 칠하지 않는다.
+ * 누를 수 있다는 신호(Action Blue)와 절대 헷갈리지 않게 한다.
  *
  * Tailwind 는 클래스명을 정적으로 스캔하므로 문자열을 조립하지 말고 다 적어둔다.
  */
@@ -28,23 +28,23 @@ export const CARD_COLORS: Record<ColorToken, { card: string; swatch: string }> =
     swatch: "bg-[#d2d2d7]",
   },
   sky: {
-    card: "border-[#cfe0f5] bg-[#f4f8fd]",
+    card: "border-[#5aa9f5] bg-canvas",
     swatch: "bg-[#5aa9f5]",
   },
   emerald: {
-    card: "border-[#cfe5d6] bg-[#f3f9f5]",
+    card: "border-[#4cae72] bg-canvas",
     swatch: "bg-[#4cae72]",
   },
   amber: {
-    card: "border-[#ecdfba] bg-[#fdf9ee]",
+    card: "border-[#e5a83c] bg-canvas",
     swatch: "bg-[#e5a83c]",
   },
   rose: {
-    card: "border-[#f0d3d5] bg-[#fdf5f5]",
+    card: "border-[#e0687a] bg-canvas",
     swatch: "bg-[#e0687a]",
   },
   violet: {
-    card: "border-[#ddd3f2] bg-[#f8f5fd]",
+    card: "border-[#8c6fe0] bg-canvas",
     swatch: "bg-[#8c6fe0]",
   },
 };

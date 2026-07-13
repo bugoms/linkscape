@@ -1,10 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
 import { CARD_COLORS, COLOR_TOKENS } from "@/lib/palette";
-import { createClient } from "@/lib/supabase/client";
-import type { TagRow } from "@/lib/types";
 import { useBoard } from "@/store/board";
 import { useSelection } from "@/store/selection";
 import { useViewer } from "@/store/viewer";
@@ -56,7 +52,7 @@ export default function Inspector() {
   }
 
   return (
-    <aside className="absolute right-5 top-5 z-20 w-[264px] rounded-apple-lg border border-hairline bg-canvas p-4">
+    <aside className="glass-float absolute right-4 top-[84px] z-20 w-[264px] rounded-apple-lg p-4">
       <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-48">
         {frame ? "그룹" : (KIND_LABEL[item?.kind ?? ""] ?? "")}
       </p>
@@ -94,8 +90,6 @@ export default function Inspector() {
         </div>
       </div>
 
-      {item && <TagEditor itemId={item.id} />}
-
       {item && (
         <div className="mt-4 flex gap-2">
           {item.url && (
@@ -117,100 +111,5 @@ export default function Inspector() {
         </div>
       )}
     </aside>
-  );
-}
-
-/* ------------------------------------------------------------------------- */
-
-function TagEditor({ itemId }: { itemId: string }) {
-  const tags = useBoard((s) => s.tags);
-  const itemTags = useBoard((s) => s.itemTags);
-  const setTags = useBoard((s) => s.setTags);
-  const setItemTags = useBoard((s) => s.setItemTags);
-  const userId = useBoard((s) => s.userId);
-
-  const [draft, setDraft] = useState("");
-  const assigned = useMemo(() => itemTags[itemId] ?? [], [itemTags, itemId]);
-
-  /** 태그는 언두 대상이 아니다 — DB 에 바로 쓴다. */
-  async function addTag(rawName: string) {
-    const name = rawName.trim();
-    if (!name) return;
-    setDraft("");
-
-    const supabase = createClient();
-    let tag = tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
-
-    if (!tag) {
-      const { data, error } = await supabase
-        .from("tags")
-        .insert({ user_id: userId, name })
-        .select()
-        .single();
-      if (error || !data) return;
-      tag = data as TagRow;
-      setTags([...tags, tag]);
-    }
-
-    if (assigned.includes(tag.id)) return;
-
-    const { error } = await supabase
-      .from("item_tags")
-      .insert({ item_id: itemId, tag_id: tag.id, user_id: userId });
-    if (error) return;
-
-    setItemTags(itemId, [...assigned, tag.id]);
-  }
-
-  async function removeTag(tagId: string) {
-    setItemTags(
-      itemId,
-      assigned.filter((id) => id !== tagId),
-    );
-    await createClient()
-      .from("item_tags")
-      .delete()
-      .eq("item_id", itemId)
-      .eq("tag_id", tagId);
-  }
-
-  return (
-    <div className="mt-4">
-      <p className="mb-2 text-[12px] text-ink-48">태그</p>
-
-      <div className="flex flex-wrap gap-1.5">
-        {assigned.map((tagId) => {
-          const tag = tags.find((t) => t.id === tagId);
-          if (!tag) return null;
-          return (
-            <button
-              key={tagId}
-              onClick={() => void removeTag(tagId)}
-              className="group rounded-full border border-hairline bg-pearl px-2.5 py-1 text-[12px] text-ink-80 transition hover:border-hairline hover:bg-parchment"
-            >
-              {tag.name}
-              <span className="ml-1 text-ink-48">×</span>
-            </button>
-          );
-        })}
-      </div>
-
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          e.stopPropagation();
-          if (e.key === "Enter") void addTag(draft);
-        }}
-        placeholder="태그 입력 후 Enter"
-        list="tag-suggestions"
-        className="mt-2 h-9 w-full rounded-full border border-hairline bg-canvas px-3 text-[13px] text-ink outline-none transition placeholder:text-ink-48 focus:border-action-focus"
-      />
-      <datalist id="tag-suggestions">
-        {tags.map((tag) => (
-          <option key={tag.id} value={tag.name} />
-        ))}
-      </datalist>
-    </div>
   );
 }

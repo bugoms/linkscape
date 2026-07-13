@@ -59,6 +59,20 @@ button:active:not(:disabled) {
   box-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
 }
 
+/*
+ * 캔버스 위에 "떠 있는" 크롬(플로팅 툴바·빈 캔버스 안내·우클릭 메뉴·인스펙터) 전용 글래스.
+ * 그림자 금지 규칙의 두 번째 예외 — 떠 있음을 표현할 때만 쓰고, 카드에는 쓰지 않는다.
+ */
+.glass-float {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 /* ---------------------------------------------------------------------------
    React Flow — 라이트 테마
    --------------------------------------------------------------------------- */
