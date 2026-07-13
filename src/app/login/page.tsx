@@ -75,10 +75,10 @@ export default function LoginPage() {
     <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas px-6 py-20">
       <div className="w-full max-w-[420px]">
         <header className="text-center">
-          <h1 className="text-[56px] font-semibold leading-[1.07] tracking-[-0.02em] text-ink">
+          <h1 className="text-[44px] font-semibold leading-[1.07] tracking-[-0.02em] text-ink sm:text-[56px]">
             LinkScape
           </h1>
-          <p className="mx-auto mt-3 max-w-[340px] text-[21px] font-normal leading-[1.28] text-ink-48">
+          <p className="mx-auto mt-3 max-w-[340px] text-[18px] font-normal leading-[1.28] text-ink-48 sm:text-[21px]">
             링크와 PDF를 캔버스에 펼쳐두는 개인 아카이브.
           </p>
         </header>

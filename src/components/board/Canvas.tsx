@@ -13,7 +13,14 @@ import {
   type EdgeChange,
   type NodeChange,
 } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { absolutePosition, frameAtPoint, toLocal, type Point } from "@/lib/geometry";
 import type { EdgeRow } from "@/lib/types";
@@ -38,6 +45,19 @@ const nodeTypes = {
   note: NoteNode,
   frame: FrameNode,
 };
+
+/** 터치 기기이거나 화면이 좁으면 "모바일" — 올가미를 끄고 드래그는 팬으로 쓴다 */
+const MOBILE_MQ = "(pointer: coarse), (max-width: 639px)";
+
+function subscribeMobile(callback: () => void) {
+  const mq = window.matchMedia(MOBILE_MQ);
+  mq.addEventListener("change", callback);
+  return () => mq.removeEventListener("change", callback);
+}
+
+function isMobileSnapshot() {
+  return window.matchMedia(MOBILE_MQ).matches;
+}
 
 type MenuState =
   | { kind: "node"; id: string; x: number; y: number }
@@ -81,6 +101,12 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
 
   const [dragOver, setDragOver] = useState(false);
   const [menu, setMenu] = useState<MenuState | null>(null);
+  /** 모바일(터치·좁은 화면)에서는 올가미 없음 — 드래그 = 팬. 화면 크기 변화에도 즉시 반응 */
+  const isMobile = useSyncExternalStore(
+    subscribeMobile,
+    isMobileSnapshot,
+    () => false,
+  );
 
   const pointerRef = useRef<{ x: number; y: number } | null>(null);
   /** 우클릭이 제자리 클릭(메뉴)이었는지 판단하기 위한 눌린 위치 */
@@ -573,8 +599,8 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
         multiSelectionKeyCode={["Shift", "Meta", "Control"]}
         selectionKeyCode={null}
         /* selectionMode 기본값 = Full: 올가미에 완전히 들어온 카드만 선택된다 */
-        panOnDrag={[1]}
-        selectionOnDrag
+        panOnDrag={isMobile ? true : [1]}
+        selectionOnDrag={!isMobile}
         panOnScroll
         zoomOnScroll={false}
         zoomOnDoubleClick={false}
@@ -592,14 +618,15 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
           size={1}
           color="#d9d9de"
         />
+        {/* 좁은 화면에선 하단 액션 바와 겹치므로 숨긴다 (핀치 줌으로 대체) */}
         <Controls
           showInteractive={false}
-          className="!bottom-5 !left-5 overflow-hidden rounded-apple-md border border-hairline"
+          className="!bottom-5 !left-5 !hidden overflow-hidden rounded-apple-md border border-hairline sm:!flex"
         />
         <MiniMap
           pannable
           zoomable
-          className="!bottom-5 !right-5 overflow-hidden rounded-apple-md border border-hairline"
+          className="!bottom-5 !right-5 !hidden overflow-hidden rounded-apple-md border border-hairline lg:!block"
           maskColor="rgba(245,245,247,0.7)"
           nodeColor={(node) => (node.type === "frame" ? "#d2d2d7" : "#b8b8bd")}
         />

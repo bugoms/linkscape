@@ -92,7 +92,7 @@ export default function TrashPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 px-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div

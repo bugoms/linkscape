@@ -257,7 +257,7 @@ function PdfBody({ itemId }: { itemId: string }) {
       </div>
 
       {/* 스크롤 중에도 떠 있는 프로스티드 바 */}
-      <footer className="flex h-16 shrink-0 items-center justify-center gap-2 border-t border-hairline bg-canvas/80 px-8 backdrop-blur-xl backdrop-saturate-150">
+      <footer className="flex min-h-16 shrink-0 flex-wrap items-center justify-center gap-1.5 border-t border-hairline bg-canvas/80 px-3 py-2 backdrop-blur-xl backdrop-saturate-150 sm:gap-2 sm:px-8">
         <NavButton onClick={() => go(-1)} disabled={page <= 1}>
           ← 이전
         </NavButton>

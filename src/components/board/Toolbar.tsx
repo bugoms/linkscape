@@ -74,14 +74,17 @@ export default function Toolbar({
   }
 
   return (
-    <header className="glass-float absolute inset-x-4 top-2 z-30 flex h-[52px] items-center gap-2 rounded-full px-5">
-      <span className="select-none text-[19px] font-semibold tracking-[-0.02em] text-ink">
+    <>
+    <header className="glass-float absolute inset-x-2 top-2 z-30 flex h-[52px] items-center gap-2 rounded-full pl-5 pr-3 sm:inset-x-4 sm:px-5">
+      <span className="shrink-0 select-none whitespace-nowrap text-[19px] font-semibold tracking-[-0.02em] text-ink">
         LinkScape
       </span>
-      <span className="hidden text-[14px] text-ink-48 sm:inline">{boardTitle}</span>
+      <span className="hidden whitespace-nowrap text-[14px] text-ink-48 xl:inline">
+        {boardTitle}
+      </span>
 
-      {/* 검색·입력은 pill — "액션"의 문법 */}
-      <form onSubmit={submitUrl} className="ml-3 w-80">
+      {/* 검색·입력은 pill — "액션"의 문법. 좁은 화면에선 남는 폭을 전부 쓴다 */}
+      <form onSubmit={submitUrl} className="min-w-0 flex-1 sm:ml-2 lg:max-w-80">
         <input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -90,27 +93,30 @@ export default function Toolbar({
         />
       </form>
 
-      <Divider />
+      {/* 카드 만들기·삭제·언두는 넓은 화면에선 상단 바에, 좁은 화면에선 하단 액션 바에 */}
+      <div className="hidden items-center gap-2 lg:flex">
+        <Divider />
 
-      <Utility onClick={() => addNote(center())}>메모</Utility>
-      <Utility onClick={() => addFrame(center())}>그룹</Utility>
+        <Utility onClick={() => addNote(center())}>메모</Utility>
+        <Utility onClick={() => addFrame(center())}>그룹</Utility>
 
-      <Divider />
+        <Divider />
 
-      <Utility onClick={deleteSelected} disabled={!hasSelection} title="Delete">
-        삭제
-      </Utility>
+        <Utility onClick={deleteSelected} disabled={!hasSelection} title="Delete">
+          삭제
+        </Utility>
 
-      <Divider />
+        <Divider />
 
-      <Utility onClick={undo} disabled={!canUndo} title="Ctrl+Z">
-        ↶
-      </Utility>
-      <Utility onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">
-        ↷
-      </Utility>
+        <Utility onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+          ↶
+        </Utility>
+        <Utility onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">
+          ↷
+        </Utility>
+      </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
         <SaveBadge state={saveState} />
 
         <div className="relative">
@@ -168,6 +174,22 @@ export default function Toolbar({
         </div>
       </div>
     </header>
+
+    {/* 좁은 화면 전용 하단 액션 바 — 엄지가 닿는 곳에 둔다 */}
+    <nav className="glass-float absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2.5 py-1.5 lg:hidden">
+      <Utility onClick={() => addNote(center())}>메모</Utility>
+      <Utility onClick={() => addFrame(center())}>그룹</Utility>
+      <Utility onClick={deleteSelected} disabled={!hasSelection}>
+        삭제
+      </Utility>
+      <Utility onClick={undo} disabled={!canUndo}>
+        ↶
+      </Utility>
+      <Utility onClick={redo} disabled={!canRedo}>
+        ↷
+      </Utility>
+    </nav>
+    </>
   );
 }
 
@@ -188,7 +210,7 @@ function Utility({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="rounded-full border border-divider bg-pearl px-3.5 py-1.5 text-[14px] text-ink-80 transition hover:bg-parchment disabled:opacity-30 disabled:hover:bg-pearl"
+      className="shrink-0 whitespace-nowrap rounded-full border border-divider bg-pearl px-3.5 py-1.5 text-[14px] text-ink-80 transition hover:bg-parchment disabled:opacity-30 disabled:hover:bg-pearl"
     >
       {children}
     </button>
@@ -221,17 +243,25 @@ function Divider() {
 
 function SaveBadge({ state }: { state: "idle" | "saving" | "error" }) {
   if (state === "saving") {
-    return <span className="px-2 text-[12px] text-ink-48">저장 중…</span>;
+    return (
+      <span className="whitespace-nowrap px-1 text-[12px] text-ink-48 sm:px-2">
+        저장 중…
+      </span>
+    );
   }
   if (state === "error") {
     return (
       <span
-        className="px-2 text-[12px] text-ink-80"
+        className="whitespace-nowrap px-1 text-[12px] text-ink-80 sm:px-2"
         title="잠시 후 자동으로 재시도합니다"
       >
         저장 실패 · 재시도 중
       </span>
     );
   }
-  return <span className="px-2 text-[12px] text-ink-48">저장됨</span>;
+  return (
+    <span className="whitespace-nowrap px-1 text-[12px] text-ink-48 sm:px-2">
+      저장됨
+    </span>
+  );
 }
