@@ -1,6 +1,17 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 
 import "./globals.css";
+
+/**
+ * SF Pro 는 애플 전용 폰트다. macOS/iOS 에서는 -apple-system 이 진짜 SF Pro 로 해석되고,
+ * 그 외 플랫폼에서는 가장 가까운 오픈소스 대체인 Inter 로 떨어진다. (DESIGN-apple.md)
+ */
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "pdflinkin",
@@ -8,15 +19,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko" className="h-full">
-      <body className="h-full overscroll-none bg-neutral-950 text-neutral-100 antialiased">
+    <html lang="ko" className={`h-full ${inter.variable}`}>
+      <body className="h-full overscroll-none bg-canvas text-ink antialiased">
         {children}
       </body>
     </html>

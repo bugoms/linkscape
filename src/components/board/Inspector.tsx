@@ -9,6 +9,14 @@ import { useBoard } from "@/store/board";
 import { useSelection } from "@/store/selection";
 import { useViewer } from "@/store/viewer";
 
+const KIND_LABEL: Record<string, string> = {
+  link: "링크",
+  pdf: "PDF",
+  image: "이미지",
+  note: "메모",
+  file: "파일",
+};
+
 export default function Inspector() {
   const nodeIds = useSelection((s) => s.nodeIds);
   const items = useBoard((s) => s.items);
@@ -48,9 +56,9 @@ export default function Inspector() {
   }
 
   return (
-    <aside className="absolute right-4 top-4 z-20 w-64 rounded-xl border border-neutral-800 bg-neutral-900/95 p-3 shadow-2xl backdrop-blur">
-      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
-        {frame ? "그룹" : (item?.kind ?? "")}
+    <aside className="absolute right-5 top-5 z-20 w-[264px] rounded-apple-lg border border-hairline bg-canvas p-4">
+      <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-48">
+        {frame ? "그룹" : (KIND_LABEL[item?.kind ?? ""] ?? "")}
       </p>
 
       <input
@@ -63,22 +71,22 @@ export default function Inspector() {
           if (e.key === "Enter") e.currentTarget.blur();
         }}
         placeholder="제목"
-        className="w-full rounded-lg border border-neutral-800 bg-neutral-950 px-2.5 py-1.5 text-sm outline-none focus:border-neutral-600"
+        className="mt-2 h-10 w-full rounded-apple-md border border-hairline bg-canvas px-3 text-[15px] text-ink outline-none transition placeholder:text-ink-48 focus:border-action-focus"
       />
 
-      <div className="mt-3">
-        <p className="mb-1.5 text-[11px] text-neutral-500">색</p>
-        <div className="flex gap-1.5">
+      <div className="mt-4">
+        <p className="mb-2 text-[12px] text-ink-48">색</p>
+        <div className="flex gap-2">
           {COLOR_TOKENS.map((token) => (
             <button
               key={token}
               onClick={() => setColor(token)}
               className={[
-                "h-5 w-5 rounded-full transition",
+                "h-6 w-6 rounded-full transition",
                 CARD_COLORS[token].swatch,
                 currentColor === token
-                  ? "ring-2 ring-white ring-offset-2 ring-offset-neutral-900"
-                  : "opacity-60 hover:opacity-100",
+                  ? "ring-2 ring-action-focus ring-offset-2 ring-offset-canvas"
+                  : "opacity-70 hover:opacity-100",
               ].join(" ")}
               aria-label={token}
             />
@@ -89,11 +97,11 @@ export default function Inspector() {
       {item && <TagEditor itemId={item.id} />}
 
       {item && (
-        <div className="mt-3 flex gap-1.5">
+        <div className="mt-4 flex gap-2">
           {item.url && (
             <button
               onClick={() => window.open(item.url!, "_blank", "noopener,noreferrer")}
-              className="flex-1 rounded-lg border border-neutral-800 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
+              className="flex-1 rounded-full bg-action px-3 py-2 text-[14px] text-white transition"
             >
               원본 열기 ↗
             </button>
@@ -101,7 +109,7 @@ export default function Inspector() {
           {(item.kind === "pdf" || item.kind === "image") && (
             <button
               onClick={() => openViewer(item.id)}
-              className="flex-1 rounded-lg border border-neutral-800 px-2 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800"
+              className="flex-1 rounded-full bg-action px-3 py-2 text-[14px] text-white transition"
             >
               열기
             </button>
@@ -167,10 +175,10 @@ function TagEditor({ itemId }: { itemId: string }) {
   }
 
   return (
-    <div className="mt-3">
-      <p className="mb-1.5 text-[11px] text-neutral-500">태그</p>
+    <div className="mt-4">
+      <p className="mb-2 text-[12px] text-ink-48">태그</p>
 
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {assigned.map((tagId) => {
           const tag = tags.find((t) => t.id === tagId);
           if (!tag) return null;
@@ -178,10 +186,10 @@ function TagEditor({ itemId }: { itemId: string }) {
             <button
               key={tagId}
               onClick={() => void removeTag(tagId)}
-              className="group rounded-md bg-neutral-800 px-1.5 py-0.5 text-[11px] text-neutral-300 hover:bg-red-900/50"
+              className="group rounded-full border border-hairline bg-pearl px-2.5 py-1 text-[12px] text-ink-80 transition hover:border-hairline hover:bg-parchment"
             >
               {tag.name}
-              <span className="ml-1 text-neutral-600 group-hover:text-red-300">×</span>
+              <span className="ml-1 text-ink-48">×</span>
             </button>
           );
         })}
@@ -196,7 +204,7 @@ function TagEditor({ itemId }: { itemId: string }) {
         }}
         placeholder="태그 입력 후 Enter"
         list="tag-suggestions"
-        className="mt-1.5 w-full rounded-lg border border-neutral-800 bg-neutral-950 px-2.5 py-1 text-xs outline-none focus:border-neutral-600"
+        className="mt-2 h-9 w-full rounded-full border border-hairline bg-canvas px-3 text-[13px] text-ink outline-none transition placeholder:text-ink-48 focus:border-action-focus"
       />
       <datalist id="tag-suggestions">
         {tags.map((tag) => (

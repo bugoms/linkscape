@@ -37,10 +37,11 @@ export default function CardShell({
       <Handle type="target" position={Position.Left} />
       <Handle type="source" position={Position.Right} />
 
+      {/* 그림자 없음. 면은 헤어라인으로만 만든다. (DESIGN-apple.md) */}
       <div
         onDoubleClick={onOpen}
         className={[
-          "card-shell group flex h-full w-full flex-col overflow-hidden rounded-xl border shadow-lg transition-opacity",
+          "card-shell group flex h-full w-full flex-col overflow-hidden rounded-apple-lg border transition-opacity",
           palette.card,
           dimmed ? "opacity-25" : "opacity-100",
         ].join(" ")}

@@ -15,35 +15,47 @@ export const COLOR_TOKENS: ColorToken[] = [
   "violet",
 ];
 
-/** Tailwind는 클래스명을 정적으로 스캔하므로 문자열을 조립하지 말고 다 적어둔다. */
+/**
+ * 카드 색은 "분류"지 "액션"이 아니다.
+ * 그래서 전부 흰 종이에 가까운 옅은 틴트로만 쓰고, 누를 수 있다는 신호(Action Blue)와
+ * 절대 헷갈리지 않게 한다. 그림자는 없고 헤어라인만으로 면을 만든다.
+ *
+ * Tailwind 는 클래스명을 정적으로 스캔하므로 문자열을 조립하지 말고 다 적어둔다.
+ */
 export const CARD_COLORS: Record<ColorToken, { card: string; swatch: string }> = {
-  neutral: { card: "border-neutral-800 bg-neutral-900", swatch: "bg-neutral-500" },
-  sky: { card: "border-sky-900/70 bg-sky-950/40", swatch: "bg-sky-500" },
-  emerald: {
-    card: "border-emerald-900/70 bg-emerald-950/40",
-    swatch: "bg-emerald-500",
+  neutral: {
+    card: "border-hairline bg-canvas",
+    swatch: "bg-[#d2d2d7]",
   },
-  amber: { card: "border-amber-900/70 bg-amber-950/40", swatch: "bg-amber-500" },
-  rose: { card: "border-rose-900/70 bg-rose-950/40", swatch: "bg-rose-500" },
+  sky: {
+    card: "border-[#cfe0f5] bg-[#f4f8fd]",
+    swatch: "bg-[#5aa9f5]",
+  },
+  emerald: {
+    card: "border-[#cfe5d6] bg-[#f3f9f5]",
+    swatch: "bg-[#4cae72]",
+  },
+  amber: {
+    card: "border-[#ecdfba] bg-[#fdf9ee]",
+    swatch: "bg-[#e5a83c]",
+  },
+  rose: {
+    card: "border-[#f0d3d5] bg-[#fdf5f5]",
+    swatch: "bg-[#e0687a]",
+  },
   violet: {
-    card: "border-violet-900/70 bg-violet-950/40",
-    swatch: "bg-violet-500",
+    card: "border-[#ddd3f2] bg-[#f8f5fd]",
+    swatch: "bg-[#8c6fe0]",
   },
 };
 
 export const FRAME_COLORS: Record<ColorToken, { frame: string; title: string }> = {
-  neutral: { frame: "border-neutral-700/70 bg-neutral-800/20", title: "text-neutral-400" },
-  sky: { frame: "border-sky-800/70 bg-sky-900/15", title: "text-sky-400" },
-  emerald: {
-    frame: "border-emerald-800/70 bg-emerald-900/15",
-    title: "text-emerald-400",
-  },
-  amber: { frame: "border-amber-800/70 bg-amber-900/15", title: "text-amber-400" },
-  rose: { frame: "border-rose-800/70 bg-rose-900/15", title: "text-rose-400" },
-  violet: {
-    frame: "border-violet-800/70 bg-violet-900/15",
-    title: "text-violet-400",
-  },
+  neutral: { frame: "border-[#d2d2d7] bg-[#00000004]", title: "text-ink-48" },
+  sky: { frame: "border-[#b9d5f2] bg-[#0066cc08]", title: "text-[#2b6cb0]" },
+  emerald: { frame: "border-[#bcdcc7] bg-[#34a85308]", title: "text-[#2f7d54]" },
+  amber: { frame: "border-[#e6d3a6] bg-[#e5a83c0a]", title: "text-[#9a6b1a]" },
+  rose: { frame: "border-[#eec4c8] bg-[#e0687a0a]", title: "text-[#a54455]" },
+  violet: { frame: "border-[#cfc0ec] bg-[#8c6fe00a]", title: "text-[#63499f]" },
 };
 
 export function cardColor(token: string | null | undefined) {

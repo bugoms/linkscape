@@ -108,6 +108,7 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
       const x = (frame?.x ?? 0) + item.x + item.w / 2;
       const y = (frame?.y ?? 0) + item.y + item.h / 2;
 
+      // 바로 열지 않고 위치를 보여준다 — "그 근처에 있었지"가 이 앱의 핵심이다.
       void setCenter(x, y, { zoom: 1.1, duration: 500 });
     },
     [items, onClose, selectOnly, setCenter],
@@ -115,43 +116,45 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 pt-[12vh] backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-ink/25 pt-[12vh] backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl"
+        className="w-full max-w-xl overflow-hidden rounded-apple-lg border border-hairline bg-canvas"
         onClick={(e) => e.stopPropagation()}
       >
-        <input
-          autoFocus
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") onClose();
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              setCursor(Math.min(active + 1, hits.length - 1));
-            }
-            if (e.key === "ArrowUp") {
-              e.preventDefault();
-              setCursor(Math.max(active - 1, 0));
-            }
-            if (e.key === "Enter" && hits[active]) {
-              e.preventDefault();
-              jump(hits[active]);
-            }
-          }}
-          placeholder="제목 · 설명 · 메모 · PDF 본문 검색…"
-          className="w-full border-b border-neutral-800 bg-transparent px-4 py-3.5 text-sm outline-none placeholder:text-neutral-600"
-        />
+        <div className="px-3 pt-3">
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") onClose();
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setCursor(Math.min(active + 1, hits.length - 1));
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setCursor(Math.max(active - 1, 0));
+              }
+              if (e.key === "Enter" && hits[active]) {
+                e.preventDefault();
+                jump(hits[active]);
+              }
+            }}
+            placeholder="제목 · 설명 · 메모 · PDF 본문 검색…"
+            className="h-11 w-full rounded-full border border-hairline bg-canvas px-4 text-[15px] text-ink outline-none transition placeholder:text-ink-48 focus:border-action-focus"
+          />
+        </div>
 
-        <div className="max-h-[52vh] overflow-y-auto">
+        <div className="mt-3 max-h-[52vh] overflow-y-auto">
           {loading && hits.length === 0 && (
-            <p className="px-4 py-6 text-center text-xs text-neutral-600">찾는 중…</p>
+            <p className="px-4 py-6 text-center text-[13px] text-ink-48">찾는 중…</p>
           )}
 
           {!loading && term.length > 0 && hits.length === 0 && (
-            <p className="px-4 py-6 text-center text-xs text-neutral-600">
+            <p className="px-4 py-6 text-center text-[13px] text-ink-48">
               결과가 없습니다
             </p>
           )}
@@ -163,17 +166,17 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
               onClick={() => jump(hit)}
               className={[
                 "flex w-full items-center gap-3 px-4 py-2.5 text-left transition",
-                index === active ? "bg-neutral-800" : "hover:bg-neutral-800/50",
+                index === active ? "bg-parchment" : "",
               ].join(" ")}
             >
-              <span className="shrink-0 rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-400">
+              <span className="shrink-0 rounded-apple-sm border border-divider bg-pearl px-1.5 py-0.5 text-[10px] text-ink-48">
                 {KIND_LABEL[hit.kind] ?? hit.kind}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] text-neutral-100">
+                <span className="block truncate text-[15px] text-ink">
                   {hit.title || hit.file_name || hit.note || "제목 없음"}
                 </span>
-                <span className="block truncate text-[11px] text-neutral-500">
+                <span className="block truncate text-[12px] text-ink-48">
                   {hit.domain || hit.description || ""}
                 </span>
               </span>
@@ -181,7 +184,7 @@ export default function SearchPalette({ onClose }: { onClose: () => void }) {
           ))}
         </div>
 
-        <div className="border-t border-neutral-800 px-4 py-2 text-[11px] text-neutral-600">
+        <div className="border-t border-divider px-4 py-2.5 text-[12px] text-ink-48">
           ↑↓ 이동 · Enter 로 해당 카드로 이동 · Esc 닫기
         </div>
       </div>

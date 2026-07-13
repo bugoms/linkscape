@@ -58,10 +58,7 @@ export default function LoginPage() {
         setMessage("확인 메일을 보냈습니다. 메일의 링크를 눌러 가입을 완료하세요.");
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setError(translate(error.message));
       } else {
@@ -75,14 +72,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-neutral-950 px-6 text-neutral-100">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold tracking-tight">pdflinkin</h1>
-        <p className="mt-2 text-sm text-neutral-400">
-          링크와 PDF를 캔버스에 펼쳐두는 개인 아카이브.
-        </p>
+    <main className="flex min-h-dvh flex-col items-center justify-center bg-canvas px-6 py-20">
+      <div className="w-full max-w-[420px]">
+        <header className="text-center">
+          <h1 className="text-[56px] font-semibold leading-[1.07] tracking-[-0.02em] text-ink">
+            pdflinkin
+          </h1>
+          <p className="mx-auto mt-3 max-w-[340px] text-[21px] font-normal leading-[1.28] text-ink-48">
+            링크와 PDF를 캔버스에 펼쳐두는 개인 아카이브.
+          </p>
+        </header>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-3">
+        <form onSubmit={onSubmit} className="mt-12 space-y-3">
           <input
             type="email"
             required
@@ -90,7 +91,7 @@ export default function LoginPage() {
             placeholder="이메일"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2.5 text-sm outline-none placeholder:text-neutral-600 focus:border-neutral-600"
+            className="h-[52px] w-full rounded-apple-md border border-hairline bg-canvas px-4 text-[17px] text-ink outline-none transition placeholder:text-ink-48 focus:border-action-focus"
           />
           <input
             type="password"
@@ -100,42 +101,43 @@ export default function LoginPage() {
             placeholder="비밀번호 (6자 이상)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2.5 text-sm outline-none placeholder:text-neutral-600 focus:border-neutral-600"
+            className="h-[52px] w-full rounded-apple-md border border-hairline bg-canvas px-4 text-[17px] text-ink outline-none transition placeholder:text-ink-48 focus:border-action-focus"
           />
 
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-lg bg-neutral-100 px-3 py-2.5 text-sm font-medium text-neutral-900 transition hover:bg-white disabled:opacity-50"
+            className="h-[52px] w-full rounded-full bg-action text-[17px] font-normal text-white transition disabled:opacity-40"
           >
             {busy ? "처리 중…" : mode === "signup" ? "가입하기" : "로그인"}
           </button>
         </form>
 
         {error && (
-          <p className="mt-4 rounded-lg border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          <p className="mt-5 rounded-apple-md bg-parchment px-4 py-3 text-[14px] leading-relaxed text-ink-80">
             {error}
           </p>
         )}
         {message && (
-          <p className="mt-4 rounded-lg border border-emerald-900/60 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
+          <p className="mt-5 rounded-apple-md bg-parchment px-4 py-3 text-[14px] leading-relaxed text-ink-80">
             {message}
           </p>
         )}
 
-        <button
-          type="button"
-          onClick={() => {
-            setMode(mode === "signin" ? "signup" : "signin");
-            setError(null);
-            setMessage(null);
-          }}
-          className="mt-6 text-sm text-neutral-500 underline-offset-4 hover:text-neutral-300 hover:underline"
-        >
-          {mode === "signin"
-            ? "계정이 없나요? 가입하기"
-            : "이미 계정이 있나요? 로그인"}
-        </button>
+        <p className="mt-8 text-center text-[14px] text-ink-48">
+          {mode === "signin" ? "계정이 없나요?" : "이미 계정이 있나요?"}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setMode(mode === "signin" ? "signup" : "signin");
+              setError(null);
+              setMessage(null);
+            }}
+            className="text-action"
+          >
+            {mode === "signin" ? "가입하기" : "로그인"} ›
+          </button>
+        </p>
       </div>
     </main>
   );

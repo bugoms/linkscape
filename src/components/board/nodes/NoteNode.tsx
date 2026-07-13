@@ -51,14 +51,12 @@ export default function NoteNode({ data, selected }: NodeProps<ItemNodeType>) {
               e.currentTarget.blur();
             }
           }}
-          className="nodrag h-full w-full resize-none bg-transparent p-3 text-[13px] leading-relaxed text-neutral-100 outline-none"
+          className="nodrag h-full w-full resize-none bg-transparent p-4 text-[15px] leading-[1.5] text-ink outline-none placeholder:text-ink-48"
           placeholder="메모를 적으세요… (Ctrl+Enter 저장, Esc 취소)"
         />
       ) : (
-        <div className="h-full w-full overflow-hidden whitespace-pre-wrap p-3 text-[13px] leading-relaxed text-neutral-100">
-          {item.note || (
-            <span className="text-neutral-500">더블클릭해서 메모 작성</span>
-          )}
+        <div className="h-full w-full overflow-hidden whitespace-pre-wrap p-4 text-[15px] leading-[1.5] text-ink">
+          {item.note || <span className="text-ink-48">더블클릭해서 메모 작성</span>}
         </div>
       )}
     </CardShell>

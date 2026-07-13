@@ -44,11 +44,11 @@ export default function FrameNode({ data, selected }: NodeProps<FrameNodeType>) 
 
       <div
         className={[
-          "card-shell h-full w-full rounded-2xl border-2 border-dashed transition-colors",
+          "card-shell h-full w-full rounded-apple-lg border transition-colors",
           palette.frame,
         ].join(" ")}
       >
-        <div className="absolute -top-7 left-1 flex items-center gap-2">
+        <div className="absolute -top-8 left-1 flex items-center gap-2">
           {editing ? (
             <input
               defaultValue={frame.title ?? ""}
@@ -63,12 +63,12 @@ export default function FrameNode({ data, selected }: NodeProps<FrameNodeType>) 
                   e.currentTarget.blur();
                 }
               }}
-              className="nodrag rounded-md border border-neutral-700 bg-neutral-900 px-2 py-0.5 text-sm outline-none"
+              className="nodrag rounded-apple-sm border border-hairline bg-canvas px-2 py-1 text-[14px] text-ink outline-none"
             />
           ) : (
             <button
               onDoubleClick={() => setEditing(true)}
-              className={`text-sm font-semibold ${palette.title}`}
+              className={`text-[14px] font-semibold tracking-[-0.01em] ${palette.title}`}
             >
               {frame.title || "무제"}
             </button>

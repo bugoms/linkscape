@@ -28,15 +28,12 @@ export default function Viewer() {
   if (!itemId || !item) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/90 backdrop-blur-sm">
-      <header className="flex shrink-0 items-center gap-3 border-b border-neutral-800 px-4 py-2.5">
-        <span className="truncate text-sm font-medium text-neutral-200">
+    <div className="fixed inset-0 z-50 flex flex-col bg-parchment">
+      <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-hairline bg-canvas/80 px-5 backdrop-blur-xl backdrop-saturate-150">
+        <span className="truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">
           {item.title || item.file_name || "보기"}
         </span>
-        <button
-          onClick={close}
-          className="ml-auto rounded-md px-2 py-1 text-sm text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100"
-        >
+        <button onClick={close} className="ml-auto text-[14px] text-action transition">
           닫기 (Esc)
         </button>
       </header>
@@ -85,13 +82,18 @@ function ImageBody({ itemId }: { itemId: string }) {
   const { url, error } = useSignedSource(item?.storage_path ?? null);
 
   return (
-    <div className="flex min-h-0 flex-1 items-center justify-center p-6">
+    <div className="flex min-h-0 flex-1 items-center justify-center p-10">
       {error ? (
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-[15px] text-ink-48">{error}</p>
       ) : url ? (
-        <img src={url} alt="" className="max-h-full max-w-full object-contain" />
+        // 표면 위에 놓인 실물 — 이 시스템의 유일한 그림자를 쓸 자리
+        <img
+          src={url}
+          alt=""
+          className="product-shadow max-h-full max-w-full rounded-apple-sm object-contain"
+        />
       ) : (
-        <p className="text-sm text-neutral-500">불러오는 중…</p>
+        <p className="text-[15px] text-ink-48">불러오는 중…</p>
       )}
     </div>
   );
@@ -199,31 +201,32 @@ function PdfBody({ itemId }: { itemId: string }) {
   if (error) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-[15px] text-ink-48">{error}</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="min-h-0 flex-1 overflow-auto p-6">
+      <div className="min-h-0 flex-1 overflow-auto p-10">
         <div className="mx-auto w-fit">
           {loading ? (
-            <p className="py-24 text-center text-sm text-neutral-500">PDF 여는 중…</p>
+            <p className="py-24 text-center text-[15px] text-ink-48">PDF 여는 중…</p>
           ) : (
-            <canvas ref={canvasRef} className="rounded-lg bg-white shadow-2xl" />
+            // 지면은 "표면 위에 놓인 실물"이다 — 시스템의 유일한 그림자를 여기에 쓴다
+            <canvas
+              ref={canvasRef}
+              className="product-shadow rounded-apple-sm bg-canvas"
+            />
           )}
         </div>
       </div>
 
-      <footer className="flex shrink-0 items-center justify-center gap-2 border-t border-neutral-800 bg-neutral-950/80 px-4 py-2.5">
-        <button
-          onClick={() => go(-1)}
-          disabled={page <= 1}
-          className="rounded-md px-2.5 py-1 text-sm text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
-        >
+      {/* 스크롤 중에도 떠 있는 프로스티드 바 */}
+      <footer className="flex h-16 shrink-0 items-center justify-center gap-2 border-t border-hairline bg-canvas/80 px-8 backdrop-blur-xl backdrop-saturate-150">
+        <NavButton onClick={() => go(-1)} disabled={page <= 1}>
           ← 이전
-        </button>
+        </NavButton>
 
         <input
           type="number"
@@ -236,35 +239,39 @@ function PdfBody({ itemId }: { itemId: string }) {
               setPage(Math.min(Math.max(1, next), Math.max(1, numPages)));
             }
           }}
-          className="w-16 rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-center text-sm outline-none"
+          className="h-9 w-16 rounded-full border border-hairline bg-canvas text-center text-[14px] text-ink outline-none focus:border-action-focus"
         />
-        <span className="text-sm text-neutral-500">/ {numPages || "?"}</span>
+        <span className="text-[14px] text-ink-48">/ {numPages || "?"}</span>
 
-        <button
-          onClick={() => go(1)}
-          disabled={page >= numPages}
-          className="rounded-md px-2.5 py-1 text-sm text-neutral-300 hover:bg-neutral-800 disabled:opacity-30"
-        >
+        <NavButton onClick={() => go(1)} disabled={page >= numPages}>
           다음 →
-        </button>
+        </NavButton>
 
-        <span className="mx-2 h-4 w-px bg-neutral-800" />
+        <span className="mx-3 h-5 w-px bg-divider" />
 
-        <button
-          onClick={() => setWidth((w) => Math.max(400, w - 150))}
-          className="rounded-md px-2 py-1 text-sm text-neutral-400 hover:bg-neutral-800"
-          title="축소"
-        >
-          −
-        </button>
-        <button
-          onClick={() => setWidth((w) => Math.min(2000, w + 150))}
-          className="rounded-md px-2 py-1 text-sm text-neutral-400 hover:bg-neutral-800"
-          title="확대"
-        >
-          +
-        </button>
+        <NavButton onClick={() => setWidth((w) => Math.max(400, w - 150))}>−</NavButton>
+        <NavButton onClick={() => setWidth((w) => Math.min(2000, w + 150))}>+</NavButton>
       </footer>
     </>
+  );
+}
+
+function NavButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="rounded-apple-md border border-divider bg-pearl px-3 py-1.5 text-[14px] text-ink-80 transition hover:bg-parchment disabled:opacity-30 disabled:hover:bg-pearl"
+    >
+      {children}
+    </button>
   );
 }

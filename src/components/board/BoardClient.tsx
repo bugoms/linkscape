@@ -84,7 +84,7 @@ function TagFilterBar() {
   if (tags.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute left-4 top-4 z-20 flex max-w-[60%] flex-wrap items-center gap-1.5">
+    <div className="pointer-events-none absolute left-5 top-5 z-20 flex max-w-[60%] flex-wrap items-center gap-1.5">
       {tags.map((tag) => {
         const active = activeTagIds.includes(tag.id);
         return (
@@ -92,10 +92,10 @@ function TagFilterBar() {
             key={tag.id}
             onClick={() => toggleTagFilter(tag.id)}
             className={[
-              "pointer-events-auto rounded-full border px-2.5 py-1 text-[11px] transition",
+              "pointer-events-auto rounded-full border px-3 py-1.5 text-[13px] transition",
               active
-                ? "border-sky-500 bg-sky-500/20 text-sky-200"
-                : "border-neutral-800 bg-neutral-900/90 text-neutral-400 hover:border-neutral-700 hover:text-neutral-200",
+                ? "border-action bg-action text-white"
+                : "border-hairline bg-canvas text-ink-80 hover:bg-parchment",
             ].join(" ")}
           >
             {tag.name}
@@ -106,7 +106,7 @@ function TagFilterBar() {
       {activeTagIds.length > 0 && (
         <button
           onClick={clearTagFilter}
-          className="pointer-events-auto rounded-full px-2 py-1 text-[11px] text-neutral-500 hover:text-neutral-200"
+          className="pointer-events-auto px-2 py-1.5 text-[13px] text-action"
         >
           필터 해제
         </button>
@@ -118,31 +118,36 @@ function TagFilterBar() {
 function EmptyHint() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
-      <div className="max-w-md rounded-2xl border border-neutral-800 bg-neutral-900/80 px-6 py-5 text-center backdrop-blur">
-        <p className="text-sm font-medium text-neutral-200">
-          빈 캔버스입니다. 여기에 던져 넣으세요.
+      <div className="max-w-[520px] px-6 text-center">
+        <h2 className="text-[40px] font-semibold leading-[1.1] tracking-[-0.02em] text-ink">
+          빈 캔버스입니다.
+        </h2>
+        <p className="mt-3 text-[21px] leading-[1.3] text-ink-48">
+          링크와 PDF를 여기에 던져 넣으세요.
         </p>
-        <ul className="mt-3 space-y-1.5 text-xs text-neutral-500">
-          <li>
-            <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 text-neutral-300">
-              Ctrl+V
-            </kbd>{" "}
-            복사한 링크를 마우스 자리에 카드로
-          </li>
-          <li>PDF · 이미지 파일을 캔버스로 드래그앤드롭</li>
-          <li>빈 곳을 더블클릭하면 메모 카드</li>
-          <li>
-            <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 text-neutral-300">
-              Ctrl+K
-            </kbd>{" "}
-            검색 ·{" "}
-            <kbd className="rounded bg-neutral-800 px-1.5 py-0.5 text-neutral-300">
-              Ctrl+Z
-            </kbd>{" "}
-            되돌리기
-          </li>
+
+        <ul className="mx-auto mt-10 max-w-[400px] space-y-2.5 text-left text-[15px] text-ink-80">
+          <Hint keys="Ctrl+V">복사한 링크를 마우스 자리에 카드로</Hint>
+          <Hint>PDF · 이미지 파일을 캔버스로 드래그앤드롭</Hint>
+          <Hint>빈 곳을 더블클릭하면 메모 카드</Hint>
+          <Hint keys="Ctrl+K">검색 · Ctrl+Z 되돌리기</Hint>
         </ul>
       </div>
     </div>
+  );
+}
+
+function Hint({ keys, children }: { keys?: string; children: React.ReactNode }) {
+  return (
+    <li className="flex items-baseline gap-3">
+      {keys ? (
+        <kbd className="shrink-0 rounded-apple-sm border border-hairline bg-canvas px-2 py-0.5 font-sans text-[13px] text-ink">
+          {keys}
+        </kbd>
+      ) : (
+        <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-ink-48" />
+      )}
+      <span>{children}</span>
+    </li>
   );
 }

@@ -57,55 +57,62 @@ export default function Toolbar({
   }
 
   return (
-    <header className="z-20 flex shrink-0 items-center gap-2 border-b border-neutral-800 bg-neutral-950/90 px-3 py-2 backdrop-blur">
-      <span className="select-none text-sm font-semibold tracking-tight text-neutral-200">
+    <header className="z-20 flex h-[52px] shrink-0 items-center gap-2 border-b border-hairline bg-canvas/80 px-4 backdrop-blur-xl backdrop-saturate-150">
+      <span className="select-none text-[21px] font-semibold tracking-[-0.02em] text-ink">
         pdflinkin
       </span>
-      <span className="hidden text-xs text-neutral-600 sm:inline">/ {boardTitle}</span>
+      <span className="hidden text-[14px] text-ink-48 sm:inline">{boardTitle}</span>
 
-      <form onSubmit={submitUrl} className="ml-3 w-72">
+      {/* 검색·입력은 pill — "액션"의 문법 */}
+      <form onSubmit={submitUrl} className="ml-4 w-80">
         <input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="링크 붙여넣고 Enter (캔버스에 Ctrl+V 해도 됩니다)"
-          className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-xs outline-none placeholder:text-neutral-600 focus:border-neutral-600"
+          placeholder="링크 붙여넣고 Enter"
+          className="h-9 w-full rounded-full border border-hairline bg-canvas px-4 text-[14px] text-ink outline-none transition placeholder:text-ink-48 focus:border-action-focus"
         />
       </form>
 
-      <div className="mx-1 h-5 w-px bg-neutral-800" />
+      <Divider />
 
-      <ToolbarButton onClick={() => addNote(center())}>+ 메모</ToolbarButton>
-      <ToolbarButton onClick={() => addFrame(center())}>+ 그룹</ToolbarButton>
+      <Utility onClick={() => addNote(center())}>메모</Utility>
+      <Utility onClick={() => addFrame(center())}>그룹</Utility>
 
-      <div className="mx-1 h-5 w-px bg-neutral-800" />
+      <Divider />
 
-      <ToolbarButton onClick={undo} disabled={!canUndo} title="Ctrl+Z">
+      <Utility onClick={undo} disabled={!canUndo} title="Ctrl+Z">
         ↶
-      </ToolbarButton>
-      <ToolbarButton onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">
+      </Utility>
+      <Utility onClick={redo} disabled={!canRedo} title="Ctrl+Shift+Z">
         ↷
-      </ToolbarButton>
+      </Utility>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5">
         <SaveBadge state={saveState} />
 
-        <ToolbarButton onClick={onOpenSearch} title="Ctrl+K">
+        <Utility onClick={onOpenSearch} title="Ctrl+K">
           검색
-        </ToolbarButton>
-        <ToolbarButton onClick={onOpenTrash}>휴지통</ToolbarButton>
+        </Utility>
+        <Utility onClick={onOpenTrash}>휴지통</Utility>
 
-        <div className="mx-1 h-5 w-px bg-neutral-800" />
+        <Divider />
 
-        <span className="hidden max-w-40 truncate text-xs text-neutral-600 md:inline">
+        <span className="hidden max-w-44 truncate text-[12px] text-ink-48 md:inline">
           {userEmail}
         </span>
-        <ToolbarButton onClick={signOut}>로그아웃</ToolbarButton>
+        <button
+          onClick={signOut}
+          className="rounded-apple-sm px-2.5 py-1.5 text-[14px] text-action transition"
+        >
+          로그아웃
+        </button>
       </div>
     </header>
   );
 }
 
-function ToolbarButton({
+/** Pearl 캡슐 — 유틸리티 버튼. 파랑이 아니다(파랑은 진짜 액션 전용). */
+function Utility({
   children,
   onClick,
   disabled,
@@ -121,23 +128,30 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="rounded-lg px-2.5 py-1.5 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-neutral-100 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
+      className="rounded-apple-md border border-divider bg-pearl px-3 py-1.5 text-[14px] text-ink-80 transition hover:bg-parchment disabled:opacity-30 disabled:hover:bg-pearl"
     >
       {children}
     </button>
   );
 }
 
+function Divider() {
+  return <span className="mx-1 h-5 w-px bg-divider" />;
+}
+
 function SaveBadge({ state }: { state: "idle" | "saving" | "error" }) {
   if (state === "saving") {
-    return <span className="text-xs text-neutral-500">저장 중…</span>;
+    return <span className="px-2 text-[12px] text-ink-48">저장 중…</span>;
   }
   if (state === "error") {
     return (
-      <span className="text-xs text-red-400" title="잠시 후 자동으로 재시도합니다">
+      <span
+        className="px-2 text-[12px] text-ink-80"
+        title="잠시 후 자동으로 재시도합니다"
+      >
         저장 실패 · 재시도 중
       </span>
     );
   }
-  return <span className="text-xs text-neutral-700">저장됨</span>;
+  return <span className="px-2 text-[12px] text-ink-48">저장됨</span>;
 }

@@ -516,30 +516,30 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
         fitView
         fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
         proOptions={{ hideAttribution: true }}
-        className="bg-neutral-950"
+        className="bg-parchment"
       >
         <Background
           variant={BackgroundVariant.Dots}
           gap={28}
           size={1}
-          color="#27272a"
+          color="#d9d9de"
         />
         <Controls
           showInteractive={false}
-          className="!bottom-4 !left-4 overflow-hidden rounded-lg border border-neutral-800"
+          className="!bottom-5 !left-5 overflow-hidden rounded-apple-md border border-hairline"
         />
         <MiniMap
           pannable
           zoomable
-          className="!bottom-4 !right-4 rounded-lg border border-neutral-800"
-          maskColor="rgba(10,10,10,0.75)"
-          nodeColor={(node) => (node.type === "frame" ? "#1e293b" : "#3f3f46")}
+          className="!bottom-5 !right-5 overflow-hidden rounded-apple-md border border-hairline"
+          maskColor="rgba(245,245,247,0.7)"
+          nodeColor={(node) => (node.type === "frame" ? "#d2d2d7" : "#b8b8bd")}
         />
       </ReactFlow>
 
       {dragOver && (
-        <div className="pointer-events-none absolute inset-4 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-sky-500/70 bg-sky-500/5">
-          <span className="rounded-lg bg-neutral-900/90 px-4 py-2 text-sm text-sky-300">
+        <div className="pointer-events-none absolute inset-5 z-10 flex items-center justify-center rounded-apple-lg border-2 border-dashed border-action bg-action/5">
+          <span className="rounded-full bg-action px-4 py-2 text-[14px] text-white">
             여기에 놓으면 카드가 됩니다 (PDF · 이미지)
           </span>
         </div>

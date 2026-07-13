@@ -7,6 +7,14 @@ import { createClient } from "@/lib/supabase/client";
 import type { ItemRow } from "@/lib/types";
 import { useBoard } from "@/store/board";
 
+const KIND_LABEL: Record<string, string> = {
+  link: "링크",
+  pdf: "PDF",
+  image: "이미지",
+  note: "메모",
+  file: "파일",
+};
+
 /** 부모가 열릴 때만 마운트한다. rows 가 null 이면 로딩 중. */
 export default function TrashPanel({ onClose }: { onClose: () => void }) {
   const boardId = useBoard((s) => s.boardId);
@@ -84,39 +92,40 @@ export default function TrashPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/25 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[70vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl"
+        className="flex max-h-[70vh] w-full max-w-lg flex-col overflow-hidden rounded-apple-lg border border-hairline bg-canvas"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center gap-2 border-b border-neutral-800 px-4 py-3">
-          <h2 className="text-sm font-medium text-neutral-200">휴지통</h2>
-          <span className="text-xs text-neutral-600">{list.length}개</span>
+        <header className="flex items-center gap-2 border-b border-divider px-5 py-4">
+          <h2 className="text-[17px] font-semibold tracking-[-0.01em] text-ink">
+            휴지통
+          </h2>
+          <span className="text-[13px] text-ink-48">{list.length}개</span>
+
           <button
             onClick={() => void emptyAll()}
             disabled={list.length === 0}
-            className="ml-auto rounded-md px-2 py-1 text-xs text-red-400 hover:bg-red-950/50 disabled:opacity-30"
+            className="ml-auto text-[14px] text-action transition disabled:text-ink-48"
           >
             전부 비우기
           </button>
-          <button
-            onClick={onClose}
-            className="rounded-md px-2 py-1 text-xs text-neutral-400 hover:bg-neutral-800"
-          >
+          <span className="mx-1 h-4 w-px bg-divider" />
+          <button onClick={onClose} className="text-[14px] text-action transition">
             닫기
           </button>
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {rows === null && (
-            <p className="px-4 py-8 text-center text-xs text-neutral-600">
+            <p className="px-5 py-10 text-center text-[13px] text-ink-48">
               불러오는 중…
             </p>
           )}
           {rows !== null && list.length === 0 && (
-            <p className="px-4 py-8 text-center text-xs text-neutral-600">
+            <p className="px-5 py-10 text-center text-[13px] text-ink-48">
               휴지통이 비어 있습니다
             </p>
           )}
@@ -124,23 +133,23 @@ export default function TrashPanel({ onClose }: { onClose: () => void }) {
           {list.map((row) => (
             <div
               key={row.id}
-              className="flex items-center gap-3 border-b border-neutral-800/60 px-4 py-2.5"
+              className="flex items-center gap-3 border-b border-divider px-5 py-3 last:border-b-0"
             >
-              <span className="shrink-0 rounded-md bg-neutral-800 px-1.5 py-0.5 text-[10px] text-neutral-400">
-                {row.kind}
+              <span className="shrink-0 rounded-apple-sm border border-divider bg-pearl px-1.5 py-0.5 text-[10px] text-ink-48">
+                {KIND_LABEL[row.kind] ?? row.kind}
               </span>
-              <span className="min-w-0 flex-1 truncate text-[13px] text-neutral-300">
+              <span className="min-w-0 flex-1 truncate text-[15px] text-ink">
                 {row.title || row.file_name || row.note || "제목 없음"}
               </span>
               <button
                 onClick={() => restore(row)}
-                className="rounded-md px-2 py-1 text-xs text-sky-400 hover:bg-neutral-800"
+                className="text-[14px] text-action transition"
               >
                 복원
               </button>
               <button
                 onClick={() => void purge(row)}
-                className="rounded-md px-2 py-1 text-xs text-neutral-500 hover:bg-red-950/50 hover:text-red-400"
+                className="text-[14px] text-ink-48 transition hover:text-ink"
               >
                 삭제
               </button>
