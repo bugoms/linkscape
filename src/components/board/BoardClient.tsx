@@ -90,7 +90,7 @@ function TagFilterBar() {
   if (tags.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute left-4 top-[84px] z-20 flex max-w-[60%] flex-wrap items-center gap-1.5">
+    <div className="pointer-events-none absolute left-4 top-[76px] z-20 flex max-w-[60%] flex-wrap items-center gap-1.5">
       {tags.map((tag) => {
         const active = activeTagIds.includes(tag.id);
         return (

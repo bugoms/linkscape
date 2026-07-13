@@ -82,10 +82,19 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
 
   const [dragOver, setDragOver] = useState(false);
   const [menu, setMenu] = useState<MenuState | null>(null);
+  /** 우클릭 올가미 사각형 (래퍼 기준 좌표) — 있으면 드래그 중 */
+  const [lassoRect, setLassoRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   const pointerRef = useRef<{ x: number; y: number } | null>(null);
-  /** 우클릭 팬과 우클릭 메뉴를 구분하기 위한 버튼 눌린 위치 */
+  /** 우클릭 올가미와 우클릭 메뉴를 구분하기 위한 버튼 눌린 위치 */
   const rightDownRef = useRef<{ x: number; y: number } | null>(null);
+  /** 진행 중인 우클릭 올가미의 시작점 */
+  const lassoRef = useRef<{ startClient: Point; active: boolean } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   /* --------------------------------------------------------------------- */
@@ -415,6 +424,12 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
   /* 우클릭 메뉴                                                             */
   /* --------------------------------------------------------------------- */
 
+  /** 우클릭을 누른 뒤 움직였다면 올가미 드래그였으므로 메뉴를 띄우지 않는다 */
+  function rightDragMoved(x: number, y: number): boolean {
+    const start = rightDownRef.current;
+    return !!start && Math.hypot(x - start.x, y - start.y) > 6;
+  }
+
   function menuEntries(current: MenuState): MenuEntry[] {
     if (current.kind === "pane") {
       const at = current.flow;
@@ -479,7 +494,84 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
         pointerRef.current = { x: e.clientX, y: e.clientY };
       }}
       onPointerDownCapture={(e) => {
-        if (e.button === 2) rightDownRef.current = { x: e.clientX, y: e.clientY };
+        if (e.button !== 2) return;
+        rightDownRef.current = { x: e.clientX, y: e.clientY };
+
+        // 캔버스 안(빈 곳이든 카드 위든)에서 시작한 우클릭은 올가미 후보 —
+        // 움직이면 올가미, 그대로 떼면 우클릭 메뉴. (미니맵·컨트롤은 pane 밖이라 제외)
+        const target = e.target as HTMLElement;
+        if (target.closest(".react-flow__pane")) {
+          lassoRef.current = {
+            startClient: { x: e.clientX, y: e.clientY },
+            active: false,
+          };
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }
+      }}
+      onPointerMove={(e) => {
+        const lasso = lassoRef.current;
+        if (!lasso) return;
+        const dx = e.clientX - lasso.startClient.x;
+        const dy = e.clientY - lasso.startClient.y;
+        if (!lasso.active && Math.hypot(dx, dy) < 5) return;
+        lasso.active = true;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        setLassoRect({
+          x: Math.min(lasso.startClient.x, e.clientX) - rect.left,
+          y: Math.min(lasso.startClient.y, e.clientY) - rect.top,
+          w: Math.abs(dx),
+          h: Math.abs(dy),
+        });
+      }}
+      onPointerUp={(e) => {
+        if (e.button !== 2) return;
+        const lasso = lassoRef.current;
+        lassoRef.current = null;
+        setLassoRect(null);
+        if (!lasso?.active) return;
+
+        const a = screenToFlowPosition(lasso.startClient);
+        const b = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+        const minX = Math.min(a.x, b.x);
+        const maxX = Math.max(a.x, b.x);
+        const minY = Math.min(a.y, b.y);
+        const maxY = Math.max(a.y, b.y);
+
+        const { items: allItems, frames: allFrames } = useBoard.getState();
+        const picked = new Set<string>();
+
+        // 카드는 일부만 걸쳐도 선택
+        for (const item of Object.values(allItems)) {
+          if (item.status !== "active") continue;
+          const abs = absolutePosition(item, allFrames);
+          if (
+            abs.x < maxX &&
+            abs.x + item.w > minX &&
+            abs.y < maxY &&
+            abs.y + item.h > minY
+          ) {
+            picked.add(item.id);
+          }
+        }
+        // 프레임은 완전히 안에 들어왔을 때만 (스치기만 해도 큰 그룹이 잡히지 않게)
+        for (const frame of Object.values(allFrames)) {
+          if (
+            frame.x >= minX &&
+            frame.y >= minY &&
+            frame.x + frame.w <= maxX &&
+            frame.y + frame.h <= maxY
+          ) {
+            picked.add(frame.id);
+          }
+        }
+
+        setSelectedNodeIds(picked);
+        setSelectedEdgeIds(new Set());
+      }}
+      onPointerCancel={() => {
+        lassoRef.current = null;
+        setLassoRect(null);
       }}
       onContextMenu={(e) => {
         if (isTypingTarget(e.target)) return; // 입력 중에는 브라우저 기본 메뉴
@@ -487,10 +579,7 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
 
         const target = e.target as HTMLElement;
         if (!target.classList.contains("react-flow__pane")) return; // 노드/엣지는 RF 콜백이 처리
-
-        // 우클릭 드래그로 팬을 한 직후라면 메뉴를 띄우지 않는다
-        const start = rightDownRef.current;
-        if (start && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) return;
+        if (rightDragMoved(e.clientX, e.clientY)) return; // 올가미 드래그 직후
 
         setMenu({
           kind: "pane",
@@ -544,6 +633,7 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
         onNodeContextMenu={(event, node) => {
           if (isTypingTarget(event.target)) return;
           event.preventDefault();
+          if (rightDragMoved(event.clientX, event.clientY)) return; // 올가미 드래그 직후
           if (!useSelection.getState().nodeIds.has(node.id)) {
             setSelectedNodeIds(new Set([node.id]));
             setSelectedEdgeIds(new Set());
@@ -552,10 +642,12 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
         }}
         onEdgeContextMenu={(event, edge) => {
           event.preventDefault();
+          if (rightDragMoved(event.clientX, event.clientY)) return;
           setMenu({ kind: "edge", id: edge.id, x: event.clientX, y: event.clientY });
         }}
         onSelectionContextMenu={(event, selectedNodes) => {
           event.preventDefault();
+          if (rightDragMoved(event.clientX, event.clientY)) return;
           const first = selectedNodes[0];
           if (!first) return;
           setMenu({ kind: "node", id: first.id, x: event.clientX, y: event.clientY });
@@ -564,10 +656,11 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
         multiSelectionKeyCode={["Shift", "Meta", "Control"]}
         selectionKeyCode={null}
         selectionMode={SelectionMode.Partial}
-        panOnDrag={[1, 2]}
+        panOnDrag={[1]}
         selectionOnDrag
         panOnScroll
         zoomOnScroll={false}
+        zoomOnDoubleClick={false}
         zoomOnPinch
         minZoom={0.1}
         maxZoom={2.5}
@@ -601,6 +694,19 @@ export default function Canvas({ onOpenSearch }: { onOpenSearch: () => void }) {
             여기에 놓으면 카드가 됩니다 (PDF · 이미지)
           </span>
         </div>
+      )}
+
+      {/* 우클릭 올가미 사각형 — RF 좌클릭 올가미(.react-flow__selection)와 같은 표정 */}
+      {lassoRect && (
+        <div
+          className="pointer-events-none absolute z-10 border border-action bg-action/5"
+          style={{
+            left: lassoRect.x,
+            top: lassoRect.y,
+            width: lassoRect.w,
+            height: lassoRect.h,
+          }}
+        />
       )}
 
       {menu && (

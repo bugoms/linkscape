@@ -110,7 +110,10 @@ function PdfBody({ itemId }: { itemId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [numPages, setNumPages] = useState(item?.page_count ?? 0);
-  const [page, setPage] = useState(Math.max(1, item?.last_read_page ?? 1));
+  // 항상 1쪽부터 열고, 읽던 기록이 있으면 이어 읽을지 물어본다.
+  const resumePage = Math.max(1, item?.last_read_page ?? 1);
+  const [page, setPage] = useState(1);
+  const [askResume, setAskResume] = useState(resumePage > 1);
   const [width, setWidth] = useState(900);
 
   const loading = !doc && !error;
@@ -179,9 +182,11 @@ function PdfBody({ itemId }: { itemId: string }) {
   );
 
   useEffect(() => {
+    // 확인창에 답하기 전에 1쪽으로 덮어써서 읽던 위치를 날리면 안 된다
+    if (askResume) return;
     const timer = setTimeout(() => savePage(page), 800);
     return () => clearTimeout(timer);
-  }, [page, savePage]);
+  }, [page, savePage, askResume]);
 
   const go = useCallback(
     (delta: number) =>
@@ -208,18 +213,47 @@ function PdfBody({ itemId }: { itemId: string }) {
 
   return (
     <>
-      <div className="min-h-0 flex-1 overflow-auto p-10">
-        <div className="mx-auto w-fit">
-          {loading ? (
-            <p className="py-24 text-center text-[15px] text-ink-48">PDF 여는 중…</p>
-          ) : (
-            // 지면은 "표면 위에 놓인 실물"이다 — 시스템의 유일한 그림자를 여기에 쓴다
-            <canvas
-              ref={canvasRef}
-              className="product-shadow rounded-apple-sm bg-canvas"
-            />
-          )}
+      <div className="relative min-h-0 flex-1">
+        <div className="h-full overflow-auto p-10">
+          <div className="mx-auto w-fit">
+            {loading ? (
+              <p className="py-24 text-center text-[15px] text-ink-48">
+                PDF 여는 중…
+              </p>
+            ) : (
+              // 지면은 "표면 위에 놓인 실물"이다 — 시스템의 유일한 그림자를 여기에 쓴다
+              <canvas
+                ref={canvasRef}
+                className="product-shadow rounded-apple-sm bg-canvas"
+              />
+            )}
+          </div>
         </div>
+
+        {askResume && (
+          <div className="absolute inset-x-0 top-6 z-10 flex justify-center px-4">
+            <div className="glass-float flex flex-wrap items-center gap-3 rounded-apple-lg px-5 py-3">
+              <span className="text-[14px] text-ink">
+                지난번에 {resumePage}쪽까지 읽었습니다. 이어 읽을까요?
+              </span>
+              <button
+                onClick={() => {
+                  setPage(resumePage);
+                  setAskResume(false);
+                }}
+                className="rounded-full bg-action px-3.5 py-1.5 text-[13px] text-white transition"
+              >
+                이어 읽기
+              </button>
+              <button
+                onClick={() => setAskResume(false)}
+                className="rounded-apple-md border border-divider bg-pearl px-3 py-1.5 text-[13px] text-ink-80 transition hover:bg-parchment"
+              >
+                처음부터
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 스크롤 중에도 떠 있는 프로스티드 바 */}

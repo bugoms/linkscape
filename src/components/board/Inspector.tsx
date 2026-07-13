@@ -52,7 +52,7 @@ export default function Inspector() {
   }
 
   return (
-    <aside className="glass-float absolute right-4 top-[84px] z-20 w-[264px] rounded-apple-lg p-4">
+    <aside className="glass-float absolute right-4 top-[76px] z-20 w-[264px] rounded-apple-lg p-4">
       <p className="text-[12px] font-semibold uppercase tracking-wide text-ink-48">
         {frame ? "그룹" : (KIND_LABEL[item?.kind ?? ""] ?? "")}
       </p>

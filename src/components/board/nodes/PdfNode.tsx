@@ -13,11 +13,6 @@ export default function PdfNode({ data, selected }: NodeProps<ItemNodeType>) {
   const { item, thumbUrl, dimmed } = data;
   const openViewer = useViewer((s) => s.open);
 
-  const progress =
-    item.last_read_page && item.page_count
-      ? Math.round((item.last_read_page / item.page_count) * 100)
-      : 0;
-
   return (
     <CardShell
       color={item.color}
@@ -47,9 +42,7 @@ export default function PdfNode({ data, selected }: NodeProps<ItemNodeType>) {
           className="absolute inset-0 flex items-center justify-center bg-white/55 opacity-0 backdrop-blur-[2px] transition group-hover:opacity-100"
         >
           <span className="rounded-full bg-action px-4 py-2 text-[14px] text-white">
-            {item.last_read_page && item.last_read_page > 1
-              ? `${item.last_read_page}쪽부터 이어 읽기`
-              : "열기"}
+            열기
           </span>
         </button>
       </div>
@@ -60,7 +53,6 @@ export default function PdfNode({ data, selected }: NodeProps<ItemNodeType>) {
         </p>
         <div className="mt-2 flex items-center gap-2 text-[12px] text-ink-48">
           <span>{item.page_count ? `${item.page_count}쪽` : ""}</span>
-          {progress > 0 && <span className="ml-auto">{progress}% 읽음</span>}
         </div>
       </div>
     </CardShell>

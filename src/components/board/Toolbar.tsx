@@ -64,7 +64,7 @@ export default function Toolbar({
   }
 
   return (
-    <header className="glass-float absolute inset-x-4 top-4 z-30 flex h-[52px] items-center gap-2 rounded-apple-lg px-4">
+    <header className="glass-float absolute inset-x-4 top-2 z-30 flex h-[52px] items-center gap-2 rounded-apple-lg px-4">
       <span className="select-none text-[21px] font-semibold tracking-[-0.02em] text-ink">
         pdflinkin
       </span>
