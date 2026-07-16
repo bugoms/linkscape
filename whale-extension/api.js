@@ -181,6 +181,51 @@ function extractUrls(text) {
     .filter(Boolean);
 }
 
+/** 보드 안 키워드 검색 — 웹사이트 SearchPalette 와 같은 대상(제목·설명·메모·
+ * 파일명·URL·PDF 본문)을 부분일치로 찾는다. */
+async function searchItems(session, boardId, rawTerm) {
+  // PostgREST 의 or() 필터를 깨뜨리는 문자를 제거한다 (웹과 동일 규칙)
+  const term = rawTerm.replace(/[,()*\\"']/g, " ").trim();
+  if (!term) return [];
+
+  const like = `*${term}*`;
+  const orExpr = [
+    "title",
+    "description",
+    "note",
+    "file_name",
+    "url",
+    "extracted_text",
+  ]
+    .map((field) => `${field}.ilike.${like}`)
+    .join(",");
+
+  return rest(
+    session,
+    `items?select=id,kind,title,file_name,note,domain,color` +
+      `&board_id=eq.${boardId}&status=eq.active` +
+      `&or=${encodeURIComponent(`(${orExpr})`)}&limit=20`,
+  );
+}
+
+/** 보드의 활성 카드 전체 (목록 보기용) */
+async function listItems(session, boardId) {
+  return rest(
+    session,
+    `items?select=id,kind,title,file_name,note,color,frame_id` +
+      `&board_id=eq.${boardId}&status=eq.active` +
+      `&order=created_at.desc&limit=300`,
+  );
+}
+
+/** 보드의 그룹(프레임) 전체 */
+async function listFrames(session, boardId) {
+  return rest(
+    session,
+    `frames?select=id,title,color&board_id=eq.${boardId}&order=created_at.asc`,
+  );
+}
+
 async function addLinkItem(session, boardId, url, pos, title) {
   await rest(session, "items", {
     method: "POST",
@@ -341,7 +386,7 @@ async function addFileItem(session, boardId, file, pos) {
   });
 }
 
-/* popup.js / background.js 가 쓰는 공개 API */
+/* popup.js / background.js / dropzone.js 가 쓰는 공개 API */
 const api = {
   signIn,
   signOut,
@@ -351,6 +396,9 @@ const api = {
   extractUrls,
   normalizeUrl,
   hostname,
+  searchItems,
+  listItems,
+  listFrames,
   addLinkItem,
   addImageLinkItem,
   addNoteItem,

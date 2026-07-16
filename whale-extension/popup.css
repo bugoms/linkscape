@@ -159,19 +159,6 @@ header .text-action {
   font-size: 13px;
 }
 
-.url-row {
-  display: flex;
-  gap: 6px;
-}
-
-.url-row input {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  border-radius: 999px;
-  padding: 0 14px;
-}
-
 .utility {
   flex-shrink: 0;
   white-space: nowrap;
@@ -185,6 +172,135 @@ header .text-action {
 
 .utility:hover {
   background: var(--parchment);
+}
+
+.header-links {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+/* "보드 열기"와 같은 문법 — 파란 텍스트, 외곽선·배경 없음 */
+button.text-action {
+  font-size: 13px;
+  color: var(--action);
+  padding: 0;
+}
+
+header .text-action {
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------------- 목록 보기 */
+
+#search-input {
+  flex-shrink: 0;
+  height: 36px;
+  border-radius: 999px;
+  padding: 0 14px;
+}
+
+#search-input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+#item-list {
+  list-style: none;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-md);
+}
+
+#item-list li.empty {
+  padding: 14px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-48);
+}
+
+/* 그룹(프레임) 헤더 */
+#item-list .group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 6px;
+  background: var(--pearl);
+  border-top: 1px solid var(--divider);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-80);
+}
+
+#item-list .group-header:first-child {
+  border-top: none;
+}
+
+#item-list .group-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#item-list .group-count {
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--ink-48);
+}
+
+#item-list button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+#item-list button:hover {
+  background: var(--parchment);
+}
+
+/* 그룹 소속 문서 — 검은 ㄴ자 연결선으로 종속 표시 */
+#item-list li.child button {
+  padding-left: 18px;
+}
+
+#item-list .tree {
+  flex-shrink: 0;
+  width: 10px;
+  height: 16px;
+  margin-bottom: 10px;
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  border-bottom-left-radius: 3px;
+}
+
+/* 카드 색 토큰 — 웹사이트 lib/palette.ts 의 스와치 색과 동일 */
+#item-list .dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.dot.neutral { background: #d2d2d7; }
+.dot.sky     { background: #5aa9f5; }
+.dot.emerald { background: #4cae72; }
+.dot.amber   { background: #e5a83c; }
+.dot.rose    { background: #e0687a; }
+.dot.violet  { background: #8c6fe0; }
+
+#item-list .title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--ink);
 }
 
 #dropzone {

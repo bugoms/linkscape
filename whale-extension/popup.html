@@ -27,15 +27,13 @@
     <section id="main-view" hidden>
       <header>
         <span class="logo-sm">LinkScape</span>
-        <a id="open-board" class="text-action" href="#" target="_blank" rel="noreferrer">보드 열기 ↗</a>
+        <span class="header-links">
+          <button id="open-list" class="text-action">목록 보기</button>
+          <a id="open-board" class="text-action" href="#" target="_blank" rel="noreferrer">보드 열기 ↗</a>
+        </span>
       </header>
 
       <button id="capture-tab" class="action" hidden>현재 탭 담기</button>
-
-      <form id="url-form" class="url-row">
-        <input id="url-input" type="text" placeholder="링크 붙여넣고 Enter" />
-        <button type="submit" class="utility">담기</button>
-      </form>
 
       <div id="dropzone">
         <kbd>Ctrl + V</kbd>
@@ -49,6 +47,18 @@
         <span id="account-email"></span>
         <button id="sign-out" class="text-btn">로그아웃</button>
       </footer>
+    </section>
+
+    <!-- 목록 보기 -->
+    <section id="list-view" hidden>
+      <header>
+        <button id="back-to-main" class="text-action">‹ 담기로 돌아가기</button>
+        <a id="open-board-list" class="text-action" href="#" target="_blank" rel="noreferrer">보드 열기 ↗</a>
+      </header>
+
+      <input id="search-input" type="search" placeholder="내 보드에서 검색" />
+
+      <ul id="item-list"></ul>
     </section>
 
     <script src="config.js"></script>
