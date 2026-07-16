@@ -11,6 +11,7 @@
   --ink-48: #7a7a7a;
   --hairline: #e0e0e0;
   --divider: #f0f0f0;
+  --group-fill: #f0f0f3; /* 그룹 헤더 배경 + ㄴ자 연결선 공용 */
   --action: #0066cc;
   --action-focus: #0071e3;
   --r-sm: 8px;
@@ -226,7 +227,7 @@ header .text-action {
   align-items: center;
   gap: 8px;
   padding: 8px 12px 6px;
-  background: var(--pearl);
+  background: var(--group-fill);
   border-top: 1px solid var(--divider);
   font-size: 12px;
   font-weight: 600;
@@ -264,18 +265,18 @@ header .text-action {
   background: var(--parchment);
 }
 
-/* 그룹 소속 문서 — 검은 ㄴ자 연결선으로 종속 표시 */
+/* 그룹 소속 문서 — 그룹 헤더와 같은 색의 ㄴ자 연결선으로 종속 표시 */
 #item-list li.child button {
   padding-left: 18px;
 }
 
 #item-list .tree {
   flex-shrink: 0;
-  width: 10px;
-  height: 16px;
-  margin-bottom: 10px;
-  border-left: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
+  width: 12px;
+  height: 12px;
+  margin-bottom: 6px;
+  border-left: 2px solid var(--group-fill);
+  border-bottom: 2px solid var(--group-fill);
   border-bottom-left-radius: 3px;
 }
 
