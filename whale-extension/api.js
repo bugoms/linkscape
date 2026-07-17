@@ -202,7 +202,7 @@ async function searchItems(session, boardId, rawTerm) {
 
   return rest(
     session,
-    `items?select=id,kind,title,file_name,note,domain,color` +
+    `items?select=id,kind,title,file_name,note,domain,color,url,storage_path,og_image_url` +
       `&board_id=eq.${boardId}&status=eq.active` +
       `&or=${encodeURIComponent(`(${orExpr})`)}&limit=20`,
   );
@@ -212,10 +212,32 @@ async function searchItems(session, boardId, rawTerm) {
 async function listItems(session, boardId) {
   return rest(
     session,
-    `items?select=id,kind,title,file_name,note,color,frame_id` +
+    `items?select=id,kind,title,file_name,note,color,frame_id,url,storage_path,og_image_url` +
       `&board_id=eq.${boardId}&status=eq.active` +
       `&order=created_at.desc&limit=300`,
   );
+}
+
+/** 업로드해 둔 파일(pdf/image/file)의 서명 URL. 실패하면 null.
+ *  비공개 버킷이므로 원본을 열려면 매번 서명해야 한다. */
+async function signStorageUrl(session, path, expiresIn = 3600) {
+  const res = await fetch(
+    `${LS_CONFIG.SUPABASE_URL}/storage/v1/object/sign/files/${path}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: LS_CONFIG.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${session.accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn }),
+    },
+  );
+  if (!res.ok) return null;
+  const json = await res.json().catch(() => null);
+  // REST 는 "/object/sign/files/...?token=..." 상대 경로를 준다 (supabase-js 의 signedUrl 과 필드명이 다름)
+  const rel = json?.signedURL ?? json?.signedUrl;
+  return rel ? `${LS_CONFIG.SUPABASE_URL}/storage/v1${rel}` : null;
 }
 
 /** 보드의 그룹(프레임) 전체 */
@@ -399,6 +421,7 @@ const api = {
   searchItems,
   listItems,
   listFrames,
+  signStorageUrl,
   addLinkItem,
   addImageLinkItem,
   addNoteItem,

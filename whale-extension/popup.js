@@ -218,6 +218,38 @@ function bindMain() {
     return [...items].sort((a, b) => colorIndex(a.color) - colorIndex(b.color));
   }
 
+  /** 새 탭에서 연다. 확장 팝업이면 chrome.tabs(팝업 차단 안 걸림), 아니면 window.open. */
+  function openTab(url) {
+    if (globalThis.chrome?.tabs?.create) chrome.tabs.create({ url });
+    else window.open(url, "_blank", "noreferrer");
+  }
+
+  /** 목록에서 카드를 누르면 그 문서/링크 자체를 연다 (보드가 아니라). */
+  async function openItem(item) {
+    // 1) 링크 카드 — url 로 바로 이동 (http 이미지 링크는 og_image_url 폴백)
+    const isHttp = (u) => typeof u === "string" && /^https?:\/\//.test(u);
+    const directUrl = item.url || (isHttp(item.og_image_url) ? item.og_image_url : null);
+    if (directUrl) {
+      openTab(directUrl);
+      return;
+    }
+    // 2) 업로드 파일(pdf/image/file) — 서명 URL 로 원본 열기
+    if (item.storage_path) {
+      try {
+        await ready();
+        const signed = await api.signStorageUrl(session, item.storage_path);
+        if (signed) {
+          openTab(signed);
+          return;
+        }
+      } catch {
+        /* 실패하면 아래 보드 폴백 */
+      }
+    }
+    // 3) 메모 등 열 대상이 없으면 보드를 연다
+    openTab(`${LS_CONFIG.WEB_URL}/board`);
+  }
+
   function itemRow(item, isChild) {
     const li = document.createElement("li");
     if (isChild) li.className = "child";
@@ -240,7 +272,7 @@ function bindMain() {
 
     button.append(dot, title);
     button.addEventListener("click", () => {
-      window.open(`${LS_CONFIG.WEB_URL}/board`, "_blank", "noreferrer");
+      void openItem(item);
     });
     li.append(button);
     return li;
