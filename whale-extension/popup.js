@@ -274,7 +274,34 @@ function bindMain() {
     button.addEventListener("click", () => {
       void openItem(item);
     });
-    li.append(button);
+
+    // 삭제(휴지통) — 행에 마우스를 올리면 나타난다. 확인창 없이 바로 휴지통행.
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "row-delete";
+    del.title = "삭제";
+    del.setAttribute("aria-label", "삭제");
+    del.innerHTML =
+      '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">' +
+      '<path d="M3 4.5h10M6.5 4.5V3.2a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v1.3M5 4.5l.5 8a1 1 0 0 0 1 .95h3a1 1 0 0 0 1-.95l.5-8" ' +
+      'stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    del.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      del.disabled = true;
+      try {
+        await ready();
+        await api.trashItem(session, item.id);
+        allItems = allItems.filter((it) => it.id !== item.id);
+        // 그룹 카운트가 바뀌므로 목록이면 다시 그리고, 검색 결과면 그 행만 제거
+        if (searchInput.value.trim()) li.remove();
+        else renderGrouped();
+      } catch {
+        del.disabled = false;
+        del.classList.add("failed");
+      }
+    });
+
+    li.append(button, del);
     return li;
   }
 

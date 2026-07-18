@@ -248,6 +248,15 @@ async function listFrames(session, boardId) {
   );
 }
 
+/** 카드를 휴지통으로 (웹과 동일한 소프트 삭제 — status='trashed'). 스토리지 파일은 보존. */
+async function trashItem(session, id) {
+  await rest(session, `items?id=eq.${id}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify({ status: "trashed" }),
+  });
+}
+
 async function addLinkItem(session, boardId, url, pos, title) {
   await rest(session, "items", {
     method: "POST",
@@ -421,6 +430,7 @@ const api = {
   searchItems,
   listItems,
   listFrames,
+  trashItem,
   signStorageUrl,
   addLinkItem,
   addImageLinkItem,
