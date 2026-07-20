@@ -17,7 +17,7 @@
 - `Ctrl+V` → 커서 자리에 링크 카드 (OG 메타 자동 수집) / PDF·이미지 드롭 → 카드
 - 빈 곳 더블클릭 → 메모 / 카드 더블클릭 → 열기·편집
 - **좌클릭 드래그(빈 곳) = 선택 올가미**(Partial). 팬 = 스페이스/휠클릭/터치
-- **그룹**: 툴바 "그룹 ▾" → 사각형/자유형 올가미로 영역을 감싸면 그 안 카드가 한 그룹이 됨. 카드를 프레임 밖으로 드래그하면 그룹에서 빠지고, 안으로 끌면 소속됨
+- **그룹**: 여러 방법 — ① 툴바 "그룹 ▾" → 사각형/자유형 올가미로 영역 감싸기, ② "그룹 ▾" → **"선택한 카드 묶기"**(현재 선택을 묶음), ③ 카드를 프레임 안으로 드래그(밖으로 끌면 빠짐). **선택에 기존 프레임이 있으면 그 그룹에 추가**되고 프레임이 카드 담게 커짐. **모바일**: 하단 "그룹" → **묶기 모드**(카드를 탭해 고르고 "완료")
 - **여러 보드**: 로고 옆 `BoardSwitcher` 로 보드 생성·전환·이름변경·삭제
 - **실시간**: 확장·다른 탭에서 담으면 새로고침 없이 즉시 캔버스에 나타남
 - **우클릭 메뉴** (카드: 열기·복제·삭제 / 빈 곳: 메모·그룹 추가(빈 프레임)·붙여넣기·화면 맞추기)
@@ -77,7 +77,7 @@ src/
     Toolbar.tsx               플로팅 바(BoardSwitcher·그룹▾·메모·삭제·undo) + 햄버거 + 모바일 하단바
     Inspector.tsx             단일 선택 패널. 라벨 "제목", 색(토큰5+커스텀 피커), 다운로드 버튼
     Viewer.tsx                PDF·이미지·파일 뷰어(오피스=Office Online, 한글=hwp.js 벤더 렌더, 이어읽기, 다운로드)
-    useBoardActions.ts        삭제/복제/엣지삭제/열기 공용 (파일 열기=뷰어)
+    useBoardActions.ts        삭제/복제/엣지삭제/열기/★groupSelected(선택→그룹, 기존 프레임 있으면 추가+키움) 공용
     useIngest.ts              ★ 링크/파일 → 카드 생성. addFiles 는 모든 형식 허용(PDF/이미지 외=file)
     usePdfBackfill.ts         썸네일 없는 PDF 자동 보정 (확장 업로드분)
     useLinkBackfill.ts        ★ 확장 링크 카드에 OG 메타 백필 (변경 시에만 apply)
@@ -88,7 +88,7 @@ src/
                              (FileNode = 일반 파일 카드: 아이콘+확장자 배지, 열기=뷰어/다운로드) [미커밋]
   store/
     board.ts                  ★★ 스냅샷 diff 저장 큐 + 언두/리두 + applyRemote/hasPending. 심장
-    groupMode.ts              올가미 모드 상태(null|'rect'|'free')
+    groupMode.ts              그룹 모드 상태(null|'rect'|'free'|'pick'). 'pick'=모바일 묶기 모드(탭해 고르기)
     selection.ts, viewer.ts   선택/뷰어 상태
   lib/                        supabase/, pdf.ts, storage.ts, geometry.ts, palette.ts, url.ts
 supabase/migrations/

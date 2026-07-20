@@ -95,6 +95,10 @@ button:active:not(:disabled) {
 .pad-safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+/* 묶기 모드 안내 바 — 상단 툴바(안전영역+52px) 바로 아래 */
+.pick-bar {
+  top: calc(env(safe-area-inset-top, 0px) + 68px);
+}
 
 /* ---------------------------------------------------------------------------
    React Flow — 라이트 테마

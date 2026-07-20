@@ -2,9 +2,14 @@
 
 import { useCallback } from "react";
 
-import { useBoard } from "@/store/board";
+import { absolutePosition } from "@/lib/geometry";
+import type { FrameRow } from "@/lib/types";
+import { makeFrame, useBoard } from "@/store/board";
 import { useSelection } from "@/store/selection";
 import { useViewer } from "@/store/viewer";
+
+/** 프레임이 카드들을 감쌀 때 두는 여백 (GroupLasso 와 동일) */
+const GROUP_PAD = 32;
 
 /** 선택 대상에 대한 공용 액션 — 툴바 버튼·키보드 단축키·우클릭 메뉴가 같이 쓴다. */
 export function useBoardActions() {
@@ -105,5 +110,94 @@ export function useBoardActions() {
     if (item.url) window.open(item.url, "_blank", "noopener,noreferrer");
   }, []);
 
-  return { deleteSelected, duplicateSelected, deleteEdge, openItem };
+  /** 선택한 카드들을 그룹(프레임)으로 묶는다.
+   *  - 선택에 **기존 프레임이 있으면** 그 프레임에 카드들을 추가한다(기존 그룹에 넣기).
+   *  - 없으면 카드들을 감싸는 **새 프레임**을 만든다.
+   *  프레임은 항상 자식 전부 + 여백을 담도록 키운다(줄이진 않음).
+   *  카드가 하나도 선택돼 있지 않으면 null 을 돌려준다(호출측이 폴백). */
+  const groupSelected = useCallback((): string | null => {
+    const ids = [...useSelection.getState().nodeIds];
+    const state = useBoard.getState();
+    const frameIds = ids.filter((id) => state.frames[id]);
+    const itemIds = ids.filter(
+      (id) => state.items[id] && state.items[id].status === "active",
+    );
+    if (itemIds.length === 0) return null;
+
+    const targetFrameId = frameIds[0] ?? null;
+    let resultFrameId = targetFrameId ?? "";
+
+    useBoard.getState().apply((d) => {
+      let frame: FrameRow;
+      if (targetFrameId && d.frames[targetFrameId]) {
+        frame = d.frames[targetFrameId];
+      } else {
+        const rects = itemIds.map((id) => {
+          const it = d.items[id];
+          const abs = absolutePosition(it, d.frames);
+          return { x: abs.x, y: abs.y, r: abs.x + it.w, b: abs.y + it.h };
+        });
+        const minX = Math.min(...rects.map((r) => r.x)) - GROUP_PAD;
+        const minY = Math.min(...rects.map((r) => r.y)) - GROUP_PAD;
+        const maxX = Math.max(...rects.map((r) => r.r)) + GROUP_PAD;
+        const maxY = Math.max(...rects.map((r) => r.b)) + GROUP_PAD;
+        frame = makeFrame({
+          board_id: state.boardId,
+          user_id: state.userId,
+          x: minX,
+          y: minY,
+          w: Math.max(maxX - minX, 160),
+          h: Math.max(maxY - minY, 120),
+        });
+        d.frames[frame.id] = frame;
+      }
+      resultFrameId = frame.id;
+
+      // 선택 카드들을 이 프레임 소속으로 (절대→프레임 상대 좌표)
+      for (const id of itemIds) {
+        const it = d.items[id];
+        if (!it || it.frame_id === frame.id) continue;
+        const abs = absolutePosition(it, d.frames);
+        d.items[id] = { ...it, frame_id: frame.id, x: abs.x - frame.x, y: abs.y - frame.y };
+      }
+
+      // 프레임을 자식 전부 + 여백을 담도록 키운다(줄이진 않음)
+      const kids = Object.values(d.items).filter(
+        (it) => it.frame_id === frame.id && it.status === "active",
+      );
+      let minX = frame.x;
+      let minY = frame.y;
+      let maxX = frame.x + frame.w;
+      let maxY = frame.y + frame.h;
+      for (const c of kids) {
+        const ax = frame.x + c.x;
+        const ay = frame.y + c.y;
+        minX = Math.min(minX, ax - GROUP_PAD);
+        minY = Math.min(minY, ay - GROUP_PAD);
+        maxX = Math.max(maxX, ax + c.w + GROUP_PAD);
+        maxY = Math.max(maxY, ay + c.h + GROUP_PAD);
+      }
+      const dx = frame.x - minX; // 원점이 왼/위로 밀린 양(>=0)
+      const dy = frame.y - minY;
+      if (dx !== 0 || dy !== 0) {
+        for (const c of kids) {
+          d.items[c.id] = { ...d.items[c.id], x: c.x + dx, y: c.y + dy };
+        }
+      }
+      d.frames[frame.id] = {
+        ...d.frames[frame.id],
+        x: minX,
+        y: minY,
+        w: maxX - minX,
+        h: maxY - minY,
+      };
+    });
+
+    const sel = useSelection.getState();
+    sel.setNodeIds(new Set([resultFrameId]));
+    sel.setEdgeIds(new Set());
+    return resultFrameId;
+  }, []);
+
+  return { deleteSelected, duplicateSelected, deleteEdge, openItem, groupSelected };
 }

@@ -2,8 +2,9 @@
 
 import { create } from "zustand";
 
-/** 올가미로 그룹 만들기 모드. null = 꺼짐, 'rect' = 사각형, 'free' = 자유형 */
-export type GroupLassoMode = "rect" | "free" | null;
+/** 그룹 만들기 모드.
+ *  null = 꺼짐 / 'rect'·'free' = 올가미(데스크톱) / 'pick' = 카드 탭해 고르기(모바일) */
+export type GroupLassoMode = "rect" | "free" | "pick" | null;
 
 export const useGroupMode = create<{
   mode: GroupLassoMode;

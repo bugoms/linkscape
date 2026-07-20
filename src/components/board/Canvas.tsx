@@ -103,7 +103,7 @@ export default function Canvas({
   const redo = useBoard((s) => s.redo);
 
   const { addLinks, addFiles, addNote, addFrame } = useIngest();
-  const { deleteSelected, duplicateSelected, deleteEdge, openItem } =
+  const { deleteSelected, duplicateSelected, deleteEdge, openItem, groupSelected } =
     useBoardActions();
 
   const groupLassoMode = useGroupMode((s) => s.mode);
@@ -207,7 +207,8 @@ export default function Canvas({
   const onNodesChange = useCallback(
     (changes: NodeChange<AppNode>[]) => {
       const selects = changes.filter((c) => c.type === "select");
-      if (selects.length > 0) {
+      // 묶기(pick) 모드에선 탭 선택을 onNodeClick 이 직접 토글하므로 RF 선택은 무시한다
+      if (selects.length > 0 && useGroupMode.getState().mode !== "pick") {
         const next = new Set(useSelection.getState().nodeIds);
         for (const c of selects) {
           if (c.type !== "select") continue;
@@ -324,6 +325,17 @@ export default function Canvas({
     },
     [applyLive, endInteraction],
   );
+
+  /* 묶기(pick) 모드 — 카드를 탭해 고른 뒤 완료하면 선택 카드를 그룹으로 묶는다. */
+  const finishPick = useCallback(() => {
+    groupSelected(); // 고른 게 없으면 아무 일도 안 함
+    setGroupMode(null);
+  }, [groupSelected, setGroupMode]);
+
+  const cancelPick = useCallback(() => {
+    useSelection.getState().clear();
+    setGroupMode(null);
+  }, [setGroupMode]);
 
   /* --------------------------------------------------------------------- */
   /* 딥링크 포커스 (?item=…)                                                 */
@@ -616,6 +628,16 @@ export default function Canvas({
         onConnect={onConnect}
         onNodeDragStart={beginInteraction}
         onNodeDragStop={(_, __, dragged) => settleDrag(dragged)}
+        onNodeClick={(_, node) => {
+          // 묶기 모드에서만 탭이 선택을 토글한다(그 외엔 RF 기본 동작 유지)
+          if (useGroupMode.getState().mode !== "pick") return;
+          const sel = useSelection.getState();
+          const next = new Set(sel.nodeIds);
+          if (next.has(node.id)) next.delete(node.id);
+          else next.add(node.id);
+          sel.setNodeIds(next);
+          sel.setEdgeIds(new Set());
+        }}
         onSelectionDragStart={beginInteraction}
         onSelectionDragStop={(_, dragged) => settleDrag(dragged)}
         onNodeContextMenu={(event, node) => {
@@ -679,8 +701,32 @@ export default function Canvas({
         />
       </ReactFlow>
 
-      {groupLassoMode && (
+      {(groupLassoMode === "rect" || groupLassoMode === "free") && (
         <GroupLasso mode={groupLassoMode} onDone={() => setGroupMode(null)} />
+      )}
+
+      {/* 묶기(pick) 모드 안내 바 — 카드를 탭해 고르고 완료 */}
+      {groupLassoMode === "pick" && (
+        <div className="pick-bar pointer-events-none absolute inset-x-0 z-30 flex justify-center px-4">
+          <div className="glass-float pointer-events-auto flex items-center gap-2 rounded-full py-2 pl-4 pr-2">
+            <span className="whitespace-nowrap text-[13px] text-ink">
+              묶을 카드를 탭하세요 · {selectedNodeIds.size}개
+            </span>
+            <button
+              onClick={finishPick}
+              disabled={selectedNodeIds.size === 0}
+              className="rounded-full bg-action px-3.5 py-1.5 text-[13px] text-white transition disabled:opacity-40"
+            >
+              완료
+            </button>
+            <button
+              onClick={cancelPick}
+              className="rounded-apple-md border border-divider bg-pearl px-3 py-1.5 text-[13px] text-ink-80 transition hover:bg-parchment"
+            >
+              취소
+            </button>
+          </div>
+        </div>
       )}
 
       {dragOver && (

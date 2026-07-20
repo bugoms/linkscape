@@ -33,7 +33,7 @@ export default function Toolbar({
 }) {
   const router = useRouter();
   const { screenToFlowPosition } = useReactFlow();
-  const { addLinks, addFiles, addNote, addFrame } = useIngest();
+  const { addLinks, addFiles, addNote } = useIngest();
 
   const saveState = useBoard((s) => s.saveState);
   const undo = useBoard((s) => s.undo);
@@ -41,7 +41,7 @@ export default function Toolbar({
   const canUndo = useBoard((s) => s.undoStack.length > 0);
   const canRedo = useBoard((s) => s.redoStack.length > 0);
 
-  const { deleteSelected } = useBoardActions();
+  const { deleteSelected, groupSelected } = useBoardActions();
   const setGroupMode = useGroupMode((s) => s.setMode);
   const hasSelection = useSelection(
     (s) => s.nodeIds.size > 0 || s.edgeIds.size > 0,
@@ -178,7 +178,42 @@ export default function Toolbar({
           </Utility>
 
           {openPanel === "group" && (
-            <div className="glass-float absolute left-0 top-[calc(100%+10px)] z-50 w-48 overflow-hidden rounded-apple-lg py-1.5">
+            <div className="glass-float absolute left-0 top-[calc(100%+10px)] z-50 w-52 overflow-hidden rounded-apple-lg py-1.5">
+              <p className="px-4 pb-1 pt-1 text-[11px] text-ink-48">
+                선택으로 묶기
+              </p>
+              <button
+                onClick={() => {
+                  setOpenPanel(null);
+                  groupSelected();
+                }}
+                className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-[14px] text-ink transition hover:bg-black/[0.04]"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden
+                  className="shrink-0 text-ink-48"
+                >
+                  <rect
+                    x="2.5"
+                    y="2.5"
+                    width="11"
+                    height="11"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    fill="none"
+                  />
+                  <rect x="5" y="5" width="6" height="6" rx="1" fill="currentColor" opacity="0.5" />
+                </svg>
+                <span>선택한 카드 묶기</span>
+              </button>
+
+              <div className="mx-3 my-1 h-px bg-divider" />
+
               <p className="px-4 pb-1 pt-1 text-[11px] text-ink-48">
                 영역으로 묶기
               </p>
@@ -303,7 +338,15 @@ export default function Toolbar({
     <nav className="glass-float inset-safe-bottom absolute left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2.5 py-1.5 lg:hidden">
       <Utility onClick={() => fileInputRef.current?.click()}>파일</Utility>
       <Utility onClick={() => addNote(center())}>메모</Utility>
-      <Utility onClick={() => addFrame(center())}>그룹</Utility>
+      {/* "그룹" → 묶기 모드 진입. 카드를 탭해 고른 뒤 "완료"로 묶는다(사진 선택 방식). */}
+      <Utility
+        onClick={() => {
+          useSelection.getState().clear();
+          setGroupMode("pick");
+        }}
+      >
+        그룹
+      </Utility>
       <Utility onClick={deleteSelected} disabled={!hasSelection}>
         삭제
       </Utility>
