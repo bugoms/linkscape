@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { ItemRow } from "@/lib/types";
 import { useBoard } from "@/store/board";
 
+import { TRASH_RETENTION_DAYS } from "./useTrashAutoPurge";
+
 const KIND_LABEL: Record<string, string> = {
   link: "링크",
   pdf: "PDF",
@@ -117,6 +119,10 @@ export default function TrashPanel({ onClose }: { onClose: () => void }) {
             닫기
           </button>
         </header>
+
+        <p className="shrink-0 border-b border-divider bg-pearl px-5 py-2 text-[12px] text-ink-48">
+          휴지통에 들어온 지 {TRASH_RETENTION_DAYS}일이 지나면 자동으로 완전히 삭제됩니다.
+        </p>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {rows === null && (

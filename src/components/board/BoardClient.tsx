@@ -16,6 +16,7 @@ import TrashPanel from "./TrashPanel";
 import { useLinkBackfill } from "./useLinkBackfill";
 import { usePdfBackfill } from "./usePdfBackfill";
 import { useRealtime } from "./useRealtime";
+import { useTrashAutoPurge } from "./useTrashAutoPurge";
 import Viewer from "./Viewer";
 
 export default function BoardClient(props: {
@@ -61,6 +62,9 @@ export default function BoardClient(props: {
 
   // 확장/다른 기기에서 담은 카드가 새로고침 없이 나타나게 한다
   useRealtime(props.boardId);
+
+  // 보관 기간(15일) 지난 휴지통 카드를 스토리지 파일까지 자동 정리 — 무한정 쌓이지 않게
+  useTrashAutoPurge();
 
   // 스토어 기준으로 실시간 판정 — 첫 카드가 생기는 순간 안내가 사라진다.
   // (init 전에는 boardId 가 비어 있으므로 잘못 떠 있지 않는다)
