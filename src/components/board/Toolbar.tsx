@@ -178,7 +178,7 @@ export default function Toolbar({
           </Utility>
 
           {openPanel === "group" && (
-            <div className="glass-float absolute left-0 top-[calc(100%+10px)] z-50 w-52 overflow-hidden rounded-apple-lg py-1.5">
+            <div className="glass-solid absolute left-0 top-[calc(100%+10px)] z-50 w-52 overflow-hidden rounded-apple-lg py-1.5">
               <p className="px-4 pb-1 pt-1 text-[11px] text-ink-48">
                 선택으로 묶기
               </p>
@@ -294,7 +294,7 @@ export default function Toolbar({
 
           {openPanel === "menu" && (
             <>
-              <div className="glass-float absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-apple-lg py-1.5">
+              <div className="glass-solid absolute right-0 top-[calc(100%+10px)] z-50 w-60 overflow-hidden rounded-apple-lg py-1.5">
                 <MenuItem
                   hint="Ctrl+K"
                   onClick={() => {

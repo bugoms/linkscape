@@ -50,7 +50,7 @@ export default function ContextMenu({
       <div
         ref={ref}
         onPointerDown={(e) => e.stopPropagation()}
-        className="glass-float absolute min-w-[176px] rounded-apple-md py-1.5"
+        className="glass-solid absolute min-w-[176px] rounded-apple-md py-1.5"
         style={{ left: x, top: y }}
       >
         {entries.map((entry, index) =>
