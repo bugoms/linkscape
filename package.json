@@ -9,9 +9,9 @@
     "lint": "eslint",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",
-    "postinstall": "node scripts/copy-pdf-worker.mjs",
-    "prebuild": "node scripts/copy-pdf-worker.mjs",
-    "predev": "node scripts/copy-pdf-worker.mjs"
+    "postinstall": "node scripts/copy-pdf-worker.mjs && node scripts/copy-hwp-viewer.mjs",
+    "prebuild": "node scripts/copy-pdf-worker.mjs && node scripts/copy-hwp-viewer.mjs",
+    "predev": "node scripts/copy-pdf-worker.mjs && node scripts/copy-hwp-viewer.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
@@ -20,6 +20,7 @@
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.110.2",
     "@xyflow/react": "^12.11.2",
+    "hwp.js": "^0.0.3",
     "next": "16.2.10",
     "pdfjs-dist": "^6.1.200",
     "pretendard": "^1.3.9",

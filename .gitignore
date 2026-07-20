@@ -36,6 +36,8 @@ yarn-error.log*
 
 # postinstall 로 생성되는 pdf.js 워커
 /public/pdf.worker.min.mjs
+# postinstall 로 생성되는 hwp.js 뷰어(벤더링)
+/public/vendor/hwp.js
 
 # vercel
 .vercel

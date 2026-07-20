@@ -133,10 +133,26 @@ function ImageBody({ itemId }: { itemId: string }) {
 /** MS 오피스 문서는 Office Online 뷰어가 확실히 렌더한다(웨일·크롬 공통). */
 const OFFICE_EXTS = new Set(["doc", "docx", "xls", "xlsx", "ppt", "pptx"]);
 
-/** 일반 파일(워드·엑셀·PPT·한글 등) 인앱 뷰어.
- *  - 오피스 문서: Office Online 임베드 뷰어로 렌더(서명 URL 을 MS 서버가 가져가 렌더).
- *  - 그 외(한글 등): 원본을 iframe 으로 시도(브라우저 뷰어 의존) + 다운로드 안내. */
+function fileExt(
+  item: { file_name?: string | null; storage_path?: string | null } | undefined,
+): string | undefined {
+  return (item?.file_name ?? item?.storage_path ?? "").split(".").pop()?.toLowerCase();
+}
+
+/** 일반 파일 뷰어의 진입점 — 확장자로 렌더 방식을 고른다.
+ *  - 한글(.hwp/.hwpx): hwp.js 로 브라우저에서 직접 렌더(내장 뷰어 의존 X → 크롬·엣지·웨일 공통).
+ *  - 오피스 문서·그 밖: DocBody(Office Online 임베드 / 원본 iframe). */
 function FileBody({ itemId }: { itemId: string }) {
+  const item = useBoard((s) => s.items[itemId]);
+  const ext = fileExt(item);
+  if (ext === "hwp" || ext === "hwpx") return <HwpBody itemId={itemId} />;
+  return <DocBody itemId={itemId} />;
+}
+
+/** 오피스 문서·기타 파일 뷰어.
+ *  - 오피스 문서: Office Online 임베드(서명 URL 을 MS 서버가 가져가 렌더).
+ *  - 그 외(txt·csv 등): 원본을 iframe 으로 시도(브라우저 뷰어 의존) + 다운로드 안내. */
+function DocBody({ itemId }: { itemId: string }) {
   const item = useBoard((s) => s.items[itemId]);
   const { url, error } = useSignedSource(item?.storage_path ?? null);
 
@@ -155,11 +171,7 @@ function FileBody({ itemId }: { itemId: string }) {
     );
   }
 
-  const ext = (item?.file_name ?? item?.storage_path ?? "")
-    .split(".")
-    .pop()
-    ?.toLowerCase();
-  const isOffice = ext ? OFFICE_EXTS.has(ext) : false;
+  const isOffice = OFFICE_EXTS.has(fileExt(item) ?? "");
   const src = isOffice
     ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
     : url;
@@ -175,6 +187,99 @@ function FileBody({ itemId }: { itemId: string }) {
         <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[12px] text-ink-48">
           이 형식은 브라우저 뷰어에 따라 안 보일 수 있어요. 상단의 “다운로드”로 원본을 받으세요.
         </p>
+      )}
+    </div>
+  );
+}
+
+/** 벤더링한 /vendor/hwp.js 의 최소 타입(런타임 전용 경로라 자동 추론 불가). */
+type HwpModule = {
+  Viewer: new (
+    container: HTMLElement,
+    data: Uint8Array,
+    option?: { type?: string },
+  ) => { distory(): void };
+};
+
+/** 한글 문서 뷰어 — hwp.js 로 브라우저에서 직접 렌더한다.
+ *  브라우저 내장 뷰어(웨일 등)에 의존하지 않으므로 크롬·엣지에서도 동일하게 열린다.
+ *  hwp.js 는 구형 .hwp(HWP 5.0 바이너리)만 지원 — .hwpx 등 못 읽는 형식은 다운로드 안내로 폴백. */
+function HwpBody({ itemId }: { itemId: string }) {
+  const item = useBoard((s) => s.items[itemId]);
+  const { url, error } = useSignedSource(item?.storage_path ?? null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "unsupported">("loading");
+
+  useEffect(() => {
+    if (!url) return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    let alive = true;
+    let viewer: { distory: () => void } | null = null;
+    setStatus("loading");
+
+    void (async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`파일을 받지 못했습니다 (${res.status})`);
+        const data = new Uint8Array(await res.arrayBuffer());
+        if (!alive) return;
+        // 벤더링한 원본 hwp.js 를 브라우저가 네이티브로 로드한다(turbopackIgnore).
+        // Turbopack 이 번들하면 옵션 전달이 깨져 파싱이 실패하므로 /vendor 에서 직접 서빙.
+        // (경로는 런타임 전용 — 빌드 그래프에 없어 타입 해석 불가)
+        // @ts-expect-error 런타임 전용 벤더 경로 — 타입 정의 없음
+        const mod: HwpModule = await import(/* turbopackIgnore: true */ "/vendor/hwp.js");
+        if (!alive) return;
+        container.innerHTML = "";
+        // type:'array' 필수 — 없으면 cfb 가 Uint8Array 를 base64 문자열로 오인해 파싱 실패
+        viewer = new mod.Viewer(container, data, { type: "array" });
+        setStatus("ready");
+      } catch (err) {
+        console.error("[viewer] HWP 렌더 실패", err);
+        container.innerHTML = "";
+        if (alive) setStatus("unsupported");
+      }
+    })();
+
+    return () => {
+      alive = false;
+      try {
+        viewer?.distory(); // hwp.js 정리 메서드(라이브러리 철자 그대로)
+      } catch {
+        /* 이미 언마운트 중 — 무시 */
+      }
+      container.innerHTML = "";
+    };
+  }, [url]);
+
+  if (error) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center p-10">
+        <p className="text-[15px] text-ink-48">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      {/* hwp.js 가 이 안에 직접 DOM 을 그린다 — React 는 자식을 건드리지 않는다 */}
+      <div ref={containerRef} className="h-full w-full" />
+      {status !== "ready" && (
+        <div className="absolute inset-0 flex items-center justify-center bg-parchment p-10">
+          {status === "loading" ? (
+            <p className="text-[15px] text-ink-48">한글 문서 여는 중…</p>
+          ) : (
+            <p className="max-w-sm text-center text-[14px] leading-relaxed text-ink-48">
+              이 한글 문서는 브라우저 미리보기를 만들 수 없어요. 상단의 “다운로드”로
+              원본을 받아 열어 주세요.
+              <br />
+              <span className="text-[12px] text-ink-48">
+                (신형 .hwpx 형식은 미리보기를 지원하지 않아요)
+              </span>
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
