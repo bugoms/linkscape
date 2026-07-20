@@ -80,6 +80,22 @@ button:active:not(:disabled) {
     0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+/* 네이티브 앱·설치형(PWA) 전체화면에서 상태표시줄/홈바 안전영역을 확보한다.
+ * 브라우저(안전영역 없음)에선 env() 가 0 이라 기존 8px/16px 그대로. */
+.inset-safe-top {
+  top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+}
+.inset-safe-bottom {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}
+/* 전체화면 뷰어처럼 안전영역만큼 안쪽으로 밀 때 */
+.pad-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pad-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* ---------------------------------------------------------------------------
    React Flow — 라이트 테마
    --------------------------------------------------------------------------- */

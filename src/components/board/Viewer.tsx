@@ -44,7 +44,7 @@ export default function Viewer() {
   if (!itemId || !item) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-parchment">
+    <div className="pad-safe-top fixed inset-0 z-50 flex flex-col bg-parchment">
       <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-hairline bg-canvas/80 px-5 backdrop-blur-xl backdrop-saturate-150">
         <span className="truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">
           {item.title || item.file_name || "보기"}

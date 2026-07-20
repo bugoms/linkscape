@@ -126,7 +126,7 @@ export default function Toolbar({
       hidden
       onChange={onFilesPicked}
     />
-    <header className="glass-float absolute inset-x-2 top-2 z-30 flex h-[52px] items-center gap-2 rounded-full pl-5 pr-3 sm:inset-x-4 sm:px-5">
+    <header className="glass-float inset-safe-top absolute inset-x-2 z-30 flex h-[52px] items-center gap-2 rounded-full pl-5 pr-3 sm:inset-x-4 sm:px-5">
       <span className="hidden shrink-0 select-none whitespace-nowrap text-[19px] font-semibold tracking-[-0.02em] text-ink sm:inline">
         LinkScape
       </span>
@@ -300,7 +300,7 @@ export default function Toolbar({
     </header>
 
     {/* 좁은 화면 전용 하단 액션 바 — 엄지가 닿는 곳에 둔다 */}
-    <nav className="glass-float absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2.5 py-1.5 lg:hidden">
+    <nav className="glass-float inset-safe-bottom absolute left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2.5 py-1.5 lg:hidden">
       <Utility onClick={() => fileInputRef.current?.click()}>파일</Utility>
       <Utility onClick={() => addNote(center())}>메모</Utility>
       <Utility onClick={() => addFrame(center())}>그룹</Utility>
