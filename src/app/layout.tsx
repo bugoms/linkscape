@@ -3,15 +3,22 @@ import type { Metadata, Viewport } from "next";
 // 전 사이트 서체는 Pretendard 하나로 통일한다. (다이내믹 서브셋 — 쓰는 글자만 내려받음)
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
+import ServiceWorkerRegister from "@/components/pwa/ServiceWorkerRegister";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "LinkScape",
   description: "링크와 PDF를 캔버스에 펼쳐두는 개인 아카이브",
+  applicationName: "LinkScape",
+  // 설치형(PWA)일 때 iOS 홈화면 앱처럼 동작
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "LinkScape" },
 };
 
 export const viewport: Viewport = {
   themeColor: "#ffffff",
+  // 노치/홈바까지 화면을 꽉 채운다(안전영역은 CSS env() 로 처리)
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -26,6 +33,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

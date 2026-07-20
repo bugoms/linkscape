@@ -10,7 +10,7 @@ import {
   isCustomColor,
   type ColorToken,
 } from "@/lib/palette";
-import { signPath } from "@/lib/storage";
+import { downloadFileName, downloadStoredFile, signPath } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/client";
 import { flush, useBoard } from "@/store/board";
 import { useSelection } from "@/store/selection";
@@ -188,7 +188,16 @@ export default function ListPanel({ onClose }: { onClose: () => void }) {
       window.open(directUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    // 2) 업로드 파일(pdf/image/file) — 서명 URL 로 원본 열기.
+    // 1.5) 일반 파일 — 원래 이름으로 다운로드(웨일 등은 로컬 파일을 뷰어로 연다)
+    if (item.kind === "file" && item.storage_path) {
+      await downloadStoredFile(
+        createClient(),
+        item.storage_path,
+        downloadFileName(item.title, item.file_name, item.storage_path),
+      );
+      return;
+    }
+    // 2) 업로드 파일(pdf/image) — 서명 URL 로 원본 열기(브라우저가 인라인 표시).
     //    서명은 비동기라 팝업 차단을 피하려 탭을 먼저 열고 주소를 채운다.
     if (item.storage_path) {
       const tab = window.open("about:blank", "_blank");

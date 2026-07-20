@@ -68,6 +68,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|svg|ico|mjs)$).*)",
+    // PWA 자산(manifest.webmanifest·sw.js)과 정적 파일은 인증 가드에서 제외 —
+    // 브라우저가 비인증으로 가져가므로 가드가 걸리면 로그인 HTML 로 리다이렉트돼 깨진다.
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|ico|mjs|js|webmanifest)$).*)",
   ],
 };

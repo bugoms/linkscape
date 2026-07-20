@@ -33,7 +33,7 @@ export default function Toolbar({
 }) {
   const router = useRouter();
   const { screenToFlowPosition } = useReactFlow();
-  const { addLinks, addNote, addFrame } = useIngest();
+  const { addLinks, addFiles, addNote, addFrame } = useIngest();
 
   const saveState = useBoard((s) => s.saveState);
   const undo = useBoard((s) => s.undo);
@@ -55,6 +55,7 @@ export default function Toolbar({
   const menuRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 패널 밖 어디를 눌러도(캔버스의 카드·그룹 포함) 즉시 닫는다.
   // 오버레이 div 방식은 헤더의 backdrop-filter 가 fixed 기준을 가로채 동작하지 않았다.
@@ -101,6 +102,13 @@ export default function Toolbar({
     router.refresh();
   }
 
+  /** 파일 선택창에서 고른 파일들을 화면 가운데에 카드로 올린다 (PDF·이미지·워드·한글 등) */
+  function onFilesPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) addFiles(files, center());
+    e.target.value = ""; // 같은 파일을 다시 고를 수 있도록 초기화
+  }
+
   /** 올가미 그룹 모드 시작 — 캔버스 오버레이가 영역을 받아 그룹을 만든다 */
   function startGroup(m: "rect" | "free") {
     useSelection.getState().clear();
@@ -110,6 +118,14 @@ export default function Toolbar({
 
   return (
     <>
+    {/* 폴더에서 직접 업로드 — 아래 "파일" 버튼들이 이 숨은 입력을 연다 */}
+    <input
+      ref={fileInputRef}
+      type="file"
+      multiple
+      hidden
+      onChange={onFilesPicked}
+    />
     <header className="glass-float absolute inset-x-2 top-2 z-30 flex h-[52px] items-center gap-2 rounded-full pl-5 pr-3 sm:inset-x-4 sm:px-5">
       <span className="hidden shrink-0 select-none whitespace-nowrap text-[19px] font-semibold tracking-[-0.02em] text-ink sm:inline">
         LinkScape
@@ -142,6 +158,12 @@ export default function Toolbar({
       <div className="hidden items-center gap-2 lg:flex">
         <Divider />
 
+        <Utility
+          onClick={() => fileInputRef.current?.click()}
+          title="PDF·이미지·워드·한글 등 파일 올리기"
+        >
+          파일
+        </Utility>
         <Utility onClick={() => addNote(center())}>메모</Utility>
 
         {/* 그룹 = 올가미로 영역을 감싸 묶기. 사각형/자유형 선택 */}
@@ -279,6 +301,7 @@ export default function Toolbar({
 
     {/* 좁은 화면 전용 하단 액션 바 — 엄지가 닿는 곳에 둔다 */}
     <nav className="glass-float absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-full px-2.5 py-1.5 lg:hidden">
+      <Utility onClick={() => fileInputRef.current?.click()}>파일</Utility>
       <Utility onClick={() => addNote(center())}>메모</Utility>
       <Utility onClick={() => addFrame(center())}>그룹</Utility>
       <Utility onClick={deleteSelected} disabled={!hasSelection}>

@@ -12,7 +12,10 @@ export type FrameNodeData = {
   frame: FrameRow;
 };
 
-export type ItemNodeType = Node<ItemNodeData, "link" | "pdf" | "image" | "note">;
+export type ItemNodeType = Node<
+  ItemNodeData,
+  "link" | "pdf" | "image" | "note" | "file"
+>;
 export type FrameNodeType = Node<FrameNodeData, "frame">;
 export type AppNode = ItemNodeType | FrameNodeType;
 

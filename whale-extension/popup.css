@@ -121,6 +121,19 @@ input:focus {
   opacity: 0.4;
 }
 
+/* 폴더에서 파일 선택 — 아웃라인 스타일(흰 배경 · 파란 텍스트/외곽선 · 12px 라운드) */
+#pick-file {
+  border-radius: 12px;
+  background: var(--canvas);
+  color: var(--action);
+  border: 1.5px solid var(--action);
+  font-weight: 500;
+}
+
+#pick-file:hover {
+  background: #f2f7ff;
+}
+
 .error {
   background: var(--parchment);
   border-radius: var(--r-md);

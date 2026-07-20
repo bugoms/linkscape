@@ -121,13 +121,13 @@ export function useIngest() {
           file.type === "application/pdf" ||
           file.name.toLowerCase().endsWith(".pdf");
         const isImage = file.type.startsWith("image/");
-
-        if (!isPdf && !isImage) {
-          alert(`"${file.name}" 은 지원하지 않는 형식입니다. (PDF · 이미지만 가능)`);
-          return;
-        }
-
-        const kind: ItemKind = isPdf ? "pdf" : "image";
+        // PDF·이미지는 썸네일/본문까지, 그 밖(워드·한글·압축 등)은 일반 파일 카드로.
+        const kind: ItemKind = isPdf ? "pdf" : isImage ? "image" : "file";
+        const size = isPdf
+          ? { w: 240, h: 280 }
+          : isImage
+            ? { w: 260, h: 200 }
+            : { w: 240, h: 200 };
 
         const offset = gridOffset(index);
         const item = place(
@@ -139,7 +139,7 @@ export function useIngest() {
             file_size: file.size,
             mime_type: file.type || "application/octet-stream",
           },
-          isImage ? { w: 260, h: 200 } : { w: 240, h: 280 },
+          size,
         );
 
         void (async () => {

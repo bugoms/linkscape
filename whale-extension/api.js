@@ -365,8 +365,9 @@ async function makeImageThumb(file) {
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024; // 버킷 제한과 동일
 
-/** PDF/이미지 파일 하나를 업로드하고 카드로 만든다.
- * PDF 썸네일·본문 추출은 웹사이트가 보드를 열 때 자동으로 채운다.
+/** 파일 하나를 업로드하고 카드로 만든다.
+ * PDF·이미지는 웹사이트가 보드를 열 때 썸네일/본문을 채우고,
+ * 그 밖(워드·한글·압축 등)은 미리보기 없는 "일반 파일 카드"로 담긴다.
  */
 async function addFileItem(session, boardId, file, pos) {
   if (file.size > MAX_FILE_BYTES) {
@@ -375,9 +376,7 @@ async function addFileItem(session, boardId, file, pos) {
   const isPdf =
     file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
   const isImage = file.type.startsWith("image/");
-  if (!isPdf && !isImage) {
-    throw new Error("PDF와 이미지만 담을 수 있습니다");
-  }
+  const kind = isPdf ? "pdf" : isImage ? "image" : "file";
 
   const id = crypto.randomUUID();
   const ext = isPdf ? "pdf" : (file.name.split(".").pop() ?? "bin");
@@ -407,10 +406,10 @@ async function addFileItem(session, boardId, file, pos) {
       id,
       board_id: boardId,
       user_id: session.userId,
-      kind: isPdf ? "pdf" : "image",
+      kind,
       x: pos.x,
       y: pos.y,
-      w: isPdf ? 240 : 260,
+      w: isImage ? 260 : 240,
       h: isPdf ? 280 : 200,
       title: file.name.replace(/\.[^.]+$/, ""),
       file_name: file.name,

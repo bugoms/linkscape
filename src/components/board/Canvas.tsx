@@ -32,6 +32,7 @@ import { useSelection } from "@/store/selection";
 
 import ContextMenu, { type MenuEntry } from "./ContextMenu";
 import GroupLasso from "./GroupLasso";
+import FileNode from "./nodes/FileNode";
 import FrameNode from "./nodes/FrameNode";
 import ImageNode from "./nodes/ImageNode";
 import LinkNode from "./nodes/LinkNode";
@@ -46,6 +47,7 @@ const nodeTypes = {
   pdf: PdfNode,
   image: ImageNode,
   note: NoteNode,
+  file: FileNode,
   frame: FrameNode,
 };
 
@@ -162,7 +164,7 @@ export default function Canvas({
       .filter((item) => item.status === "active")
       .map((item) => ({
         id: item.id,
-        type: item.kind === "file" ? "link" : item.kind,
+        type: item.kind,
         position: { x: item.x, y: item.y },
         width: item.w,
         height: item.h,
@@ -524,6 +526,8 @@ export default function Canvas({
     if (count === 1 && item) {
       if (item.kind === "pdf" || item.kind === "image") {
         entries.push({ label: "열기", onClick: () => openItem(current.id) });
+      } else if (item.kind === "file" && item.storage_path) {
+        entries.push({ label: "열기", onClick: () => openItem(current.id) });
       } else if (item.url) {
         entries.push({ label: "원본 열기 ↗", onClick: () => openItem(current.id) });
       }
@@ -682,7 +686,7 @@ export default function Canvas({
       {dragOver && (
         <div className="pointer-events-none absolute inset-5 z-10 flex items-center justify-center rounded-apple-lg border-2 border-dashed border-action bg-action/5">
           <span className="rounded-full bg-action px-4 py-2 text-[14px] text-white">
-            여기에 놓으면 카드가 됩니다 (PDF · 이미지)
+            여기에 놓으면 카드가 됩니다 (PDF · 이미지 · 문서 등)
           </span>
         </div>
       )}

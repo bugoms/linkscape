@@ -67,8 +67,10 @@ export default function Viewer() {
 
       {item.kind === "pdf" ? (
         <PdfBody key={item.id} itemId={item.id} />
-      ) : (
+      ) : item.kind === "image" ? (
         <ImageBody key={item.id} itemId={item.id} />
+      ) : (
+        <FileBody key={item.id} itemId={item.id} />
       )}
     </div>
   );
@@ -121,6 +123,58 @@ function ImageBody({ itemId }: { itemId: string }) {
         />
       ) : (
         <p className="text-[15px] text-ink-48">불러오는 중…</p>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------------- */
+
+/** MS 오피스 문서는 Office Online 뷰어가 확실히 렌더한다(웨일·크롬 공통). */
+const OFFICE_EXTS = new Set(["doc", "docx", "xls", "xlsx", "ppt", "pptx"]);
+
+/** 일반 파일(워드·엑셀·PPT·한글 등) 인앱 뷰어.
+ *  - 오피스 문서: Office Online 임베드 뷰어로 렌더(서명 URL 을 MS 서버가 가져가 렌더).
+ *  - 그 외(한글 등): 원본을 iframe 으로 시도(브라우저 뷰어 의존) + 다운로드 안내. */
+function FileBody({ itemId }: { itemId: string }) {
+  const item = useBoard((s) => s.items[itemId]);
+  const { url, error } = useSignedSource(item?.storage_path ?? null);
+
+  if (error) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center p-10">
+        <p className="text-[15px] text-ink-48">{error}</p>
+      </div>
+    );
+  }
+  if (!url) {
+    return (
+      <div className="flex min-h-0 flex-1 items-center justify-center p-10">
+        <p className="text-[15px] text-ink-48">불러오는 중…</p>
+      </div>
+    );
+  }
+
+  const ext = (item?.file_name ?? item?.storage_path ?? "")
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+  const isOffice = ext ? OFFICE_EXTS.has(ext) : false;
+  const src = isOffice
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
+    : url;
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      <iframe
+        src={src}
+        title={item?.file_name ?? "문서"}
+        className="h-full w-full border-0 bg-canvas"
+      />
+      {!isOffice && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-3 text-center text-[12px] text-ink-48">
+          이 형식은 브라우저 뷰어에 따라 안 보일 수 있어요. 상단의 “다운로드”로 원본을 받으세요.
+        </p>
       )}
     </div>
   );

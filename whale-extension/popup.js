@@ -183,6 +183,14 @@ function bindMain() {
     });
   }
 
+  /* 폴더에서 파일 선택 → 업로드 (PDF·이미지·워드·한글 등) */
+  $("#pick-file").addEventListener("click", () => $("#file-input").click());
+  $("#file-input").addEventListener("change", (e) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length > 0) void ingestFiles(files);
+    e.target.value = ""; // 같은 파일 다시 고를 수 있도록 초기화
+  });
+
   /* 목록 보기 — 색깔 순서로 제목 나열 + 키워드 검색 */
   $("#open-board-list").href = `${LS_CONFIG.WEB_URL}/board`;
 
@@ -226,6 +234,30 @@ function bindMain() {
     else window.open(url, "_blank", "noreferrer");
   }
 
+  /** 일반 파일을 원래 이름으로 내려받는다(한글 이름도 안 깨짐).
+   *  네이버 웨일 등은 내려받은 로컬 파일을 자체 문서 뷰어로 띄운다. */
+  async function downloadStored(item) {
+    await ready();
+    const signed = await api.signStorageUrl(session, item.storage_path);
+    if (!signed) return false;
+    try {
+      const res = await fetch(signed);
+      if (!res.ok) return false;
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = item.file_name || item.title || "download";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** 행 클릭 = 그 문서/링크 자체를 연다 (보드가 아니라). */
   async function openItem(item) {
     // 1) 링크 카드 — url 로 바로 이동 (http 이미지 링크는 og_image_url 폴백)
@@ -235,7 +267,15 @@ function bindMain() {
       openTab(directUrl);
       return;
     }
-    // 2) 업로드 파일(pdf/image/file) — 서명 URL 로 원본 열기
+    // 2) 일반 파일(워드·한글 등) — 원래 이름으로 다운로드(웨일 뷰어가 로컬 파일을 연다)
+    if (item.kind === "file" && item.storage_path) {
+      try {
+        if (await downloadStored(item)) return;
+      } catch {
+        /* 실패하면 아래 폴백 */
+      }
+    }
+    // 3) PDF·이미지 등 — 서명 URL 로 새 탭에서 인라인 보기
     if (item.storage_path) {
       try {
         await ready();
@@ -248,7 +288,7 @@ function bindMain() {
         /* 실패하면 아래 보드 폴백 */
       }
     }
-    // 3) 메모 등 열 대상이 없으면 그 카드가 있는 보드로 이동한다
+    // 4) 메모 등 열 대상이 없으면 그 카드가 있는 보드로 이동한다
     openOnBoard(item);
   }
 

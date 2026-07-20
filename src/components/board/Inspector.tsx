@@ -137,7 +137,10 @@ export default function Inspector() {
 
       {item && (
         <>
-          {(item.url || item.kind === "pdf" || item.kind === "image") && (
+          {(item.url ||
+            item.kind === "pdf" ||
+            item.kind === "image" ||
+            item.kind === "file") && (
             <div className="mt-4 flex gap-2">
               {item.url && (
                 <button
@@ -147,7 +150,9 @@ export default function Inspector() {
                   원본 열기 ↗
                 </button>
               )}
-              {(item.kind === "pdf" || item.kind === "image") && (
+              {(item.kind === "pdf" ||
+                item.kind === "image" ||
+                item.kind === "file") && (
                 <button
                   onClick={() => openViewer(item.id)}
                   className="flex-1 rounded-full bg-action px-3 py-2 text-[14px] text-white transition"

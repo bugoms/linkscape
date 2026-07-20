@@ -1,9 +1,10 @@
 # 인수인계 메모 (LinkScape)
 
-> 마지막 갱신: 2026-07-19 / `3c76067`(실시간 반영) 위에 이번 세션 4개 개선 커밋
-> 브랜치 `main`, 로컬·원격 동기화됨. **이번 세션의 4개 개선(딥링크·OG 백필·스토리지 정리·웹 목록 보기) 커밋·푸시 완료 — 4종 검증 통과(E2E 14/14).** (`plan1.md`만 미추적, 커밋 대상 아님)
+> 마지막 갱신: 2026-07-19 / 최신 커밋 `cc93741`(웹 목록·딥링크·OG백필·스토리지정리)
+> 브랜치 `main`. `cc93741` 까지 커밋·푸시됨.
+> **⚠️ 그 뒤 작업(파일 업로드/뷰어 · PWA · Capacitor 안드로이드)은 워킹 트리에 미커밋 — 각각 4종 검증 통과. 새 채팅에서 리뷰 후 커밋 대상.** (`plan1.md`만 미추적, 커밋 대상 아님)
 > 상태: **Vercel 배포 동작 중**, Supabase 마이그레이션 0001·0002 실행 완료, 헤드리스 E2E 검증 체계 구축.
-> E2E 테스트 계정·검증 노하우는 Claude 메모리(`linkscape-e2e-setup`)에도 있다.
+> **앱화(모바일) 계획·진행 상태는 `app-plan.md` 참고.** E2E 노하우는 Claude 메모리(`linkscape-e2e-setup`)에도 있다.
 
 ---
 
@@ -58,11 +59,15 @@ src/
   middleware.ts               세션 갱신 + 인증 가드. env 없으면 503
   app/
     globals.css               ★ 디자인 토큰 + .glass-float + RF 오버라이드 (단일 출처)
-    layout.tsx                Pretendard, suppressHydrationWarning(확장 주입 대응)
+    layout.tsx                Pretendard, suppressHydrationWarning, PWA 메타 + SW 등록
+    manifest.ts               ★ PWA 매니페스트(standalone + share_target GET /share) [미커밋]
     login/page.tsx            이메일 로그인/가입 (오류 한국어 번역)
+    share/page.tsx            ★ PWA 공유 착지 — 공유된 링크를 카드로 + 딥링크 [미커밋]
     board/page.tsx            ★ 서버 컴포넌트. searchParams(await)에서 board id → 보드/카드 로드
     icon.svg, apple-icon.png, favicon.ico   웹 파비콘(미니 캔버스 심벌)
     api/unfurl/route.ts       OG 수집 (SSRF 방어, 로그인 필요, 서버 함수는 이거 하나)
+  components/pwa/
+    ServiceWorkerRegister.tsx /sw.js 등록 (설치형·오프라인 셸) [미커밋]
   components/board/
     BoardClient.tsx           조립 + 태그필터바 + 빈 캔버스 안내 + useRealtime/usePdfBackfill 호출
     Canvas.tsx                ★ RF 캔버스. 올가미/팬/우클릭 메뉴/단축키/드롭/settleDrag. GroupLasso 렌더
@@ -71,14 +76,15 @@ src/
     useRealtime.ts            ★ realtime 구독 → applyRemote 로만 반영
     Toolbar.tsx               플로팅 바(BoardSwitcher·그룹▾·메모·삭제·undo) + 햄버거 + 모바일 하단바
     Inspector.tsx             단일 선택 패널. 라벨 "제목", 색(토큰5+커스텀 피커), 다운로드 버튼
-    Viewer.tsx                PDF·이미지 뷰어(이어읽기 확인창 + 다운로드)
-    useBoardActions.ts        삭제/복제/엣지삭제/열기 공용
-    useIngest.ts              ★ 링크/파일 → 카드 생성 (업로드·썸네일·본문추출·addFrame)
+    Viewer.tsx                PDF·이미지·파일 뷰어(오피스=Office Online 임베드, 이어읽기, 다운로드)
+    useBoardActions.ts        삭제/복제/엣지삭제/열기 공용 (파일 열기=뷰어)
+    useIngest.ts              ★ 링크/파일 → 카드 생성. addFiles 는 모든 형식 허용(PDF/이미지 외=file)
     usePdfBackfill.ts         썸네일 없는 PDF 자동 보정 (확장 업로드분)
     useLinkBackfill.ts        ★ 확장 링크 카드에 OG 메타 백필 (변경 시에만 apply)
     ListPanel.tsx             ★ 웹 목록 보기 — 전 보드 조회·그룹·색정렬·검색·삭제·클릭 딥링크
     ContextMenu.tsx, SearchPalette.tsx, TrashPanel.tsx
-    nodes/                    CardShell(색=외곽선), Link/Pdf/Image/Note/FrameNode, types.ts
+    nodes/                    CardShell(색=외곽선), Link/Pdf/Image/Note/File/FrameNode, types.ts
+                             (FileNode = 일반 파일 카드: 아이콘+확장자 배지, 열기=뷰어/다운로드) [미커밋]
   store/
     board.ts                  ★★ 스냅샷 diff 저장 큐 + 언두/리두 + applyRemote/hasPending. 심장
     groupMode.ts              올가미 모드 상태(null|'rect'|'free')
@@ -91,8 +97,13 @@ whale-extension/              ★ 웨일/크롬 확장 (전체가 순수 JS)
   manifest.json  config.js    MV3 / Supabase URL·anon key·WEB_URL
   api.js                      인증·PostgREST·Storage·검색·목록·삭제 — 팝업/워커/콘텐츠 3환경 공용
   background.js  dropzone.js  우클릭 메뉴·이미지 다운로드 / 페이지 드롭존
-  popup.html/css/js           팝업 UI(웹 토큰 복제) + 보드별 목록 보기
+  popup.html/css/js           팝업 UI(웹 토큰 복제) + 목록 보기 + "폴더에서 파일 선택" 버튼
   icons/                      확장 아이콘(미니 캔버스, 원본 icon.svg)
+public/sw.js                  ★ 서비스워커(오프라인 셸, 네트워크 우선) [미커밋]
+app-plan.md                   ★ 앱화(모바일) 계획·진행 상태 (PWA·Capacitor·다음 단계) [미커밋]
+capacitor.config.ts           ★ Capacitor 설정(server.url→Vercel 하이브리드 PoC) [미커밋]
+capacitor-shell/index.html    Capacitor webDir 폴백 셸 [미커밋]
+android/                      ★ Capacitor 안드로이드 네이티브 프로젝트 (gradle 빌드 검증됨) [미커밋]
 ```
 
 ---
@@ -122,7 +133,17 @@ whale-extension/              ★ 웨일/크롬 확장 (전체가 순수 JS)
 - **목록 행 클릭 = 문서/링크 열기** (웹·확장 동일) — 링크=url(http 이미지 링크는 og_image_url 폴백), 파일=서명 URL, 메모 등 열 대상 없으면 그 카드 위치로 이동(딥링크 폴백). **딥링크(보드로 이동)는 행 hover 시 나타나는 보조 아이콘 "↦ 보드에서 보기"로 분리** (사용자 요청 — 클릭은 열기, 보조 아이콘은 위치 찾기).
 - **확장 링크 카드 OG 메타 백필** (`useLinkBackfill`) — 확장이 담은 링크(호스트명+파비콘뿐)를 웹 열람 시 `/api/unfurl` 로 채운다. **unfurl 결과가 카드와 정말 달라졌을 때만 `apply`** — 메타 없는 사이트 반복 처리·언두 오염 방지(unfurl 은 성공/실패 모두 캐시).
 - **보드 삭제 시 스토리지 고아 파일 정리** — `BoardSwitcher.deleteBoard` 가 보드 삭제 전에 그 보드 카드들의 `storage_path`·`thumb_path` 를 모아 `removePaths`. DB 행은 여전히 FK cascade.
-- **웹 목록 보기** (`ListPanel`, 햄버거 메뉴 "목록 보기") — 확장의 목록 보기를 웹에 이식. 전 보드 조회 → 보드별/그룹별·색 순서 나열 + 검색(PDF 본문) + 행 클릭=문서 열기 + hover 보조 아이콘(↦ 보드에서 보기 / 삭제). 딥링크: 같은 보드=`setCenter`, 다른 보드=`flush` 후 `router.push`. 파일 열기는 서명이 비동기라 팝업 차단 피하려 탭 먼저 열고 주소 채움. 다른 보드 카드 삭제만 REST 직접 소프트삭제(스토어 없음), 현재 보드 카드는 `apply` 정식 경로.
+- **웹 목록 보기** (`ListPanel`, 햄버거 메뉴 "목록 보기") — 확장의 목록 보기를 웹에 이식. 전 보드 조회 → 보드별/그룹별·색 순서 나열 + 검색(PDF 본문) + 행 클릭=문서 열기 + hover 보조 아이콘(↦ 보드에서 보기 / 삭제). 딥링크: 같은 보드=`setCenter`, 다른 보드=`flush` 후 `router.push`. 다른 보드 카드 삭제만 REST 직접 소프트삭제(스토어 없음), 현재 보드 카드는 `apply` 정식 경로.
+
+#### 그 뒤 (⚠️ 미커밋 워킹 트리 — 각각 4종 검증 통과)
+
+- **파일 업로드 (폴더에서 직접 선택)** — 웹 툴바 "파일" 버튼(넓은 화면·모바일) + 확장 팝업 "폴더에서 파일 선택" 버튼(아웃라인 스타일: 12px·흰 배경·파란 텍스트/외곽선). `useIngest.addFiles`·확장 `api.addFileItem` 이 **모든 형식 허용**: PDF/이미지는 썸네일·본문검색, 그 밖(워드·한글·엑셀·압축 등)은 **`kind=file` 일반 파일 카드**(`FileNode`, 미리보기·본문검색 없음). 드롭·Ctrl+V 도 모든 형식.
+- **파일 열기 = 인앱 뷰어 / 다운로드 분리** — 카드 "열기"=인앱 뷰어, 우상단 아이콘=다운로드. `Viewer` 의 `FileBody`:
+  - **오피스 문서**(doc/docx/xls/xlsx/ppt/pptx) → **Office Online 임베드 뷰어**(`view.officeapps.live.com/op/embed.aspx?src=<서명URL>`)로 렌더. ⚠️ 서명 URL 을 MS 서버가 가져가 렌더 = **프라이버시 트레이드오프**.
+  - **한글(.hwp) 등** → 원본 iframe 시도(브라우저 뷰어 의존, 대개 안 보임) + "다운로드" 안내. HWP 웹 뷰어는 없음.
+  - **다운로드**는 blob+`a[download]` 로 **원래 파일명**(한글도 안 깨짐, `downloadStoredFile`).
+- **PWA (설치형 + 안드로이드 공유로 담기)** — `manifest.ts`(standalone + `share_target` GET `/share`) + `public/sw.js`(오프라인 셸, 네트워크 우선) + `ServiceWorkerRegister`. `/share` 는 공유된 링크를 가장 오래된 보드에 카드로 만들고 `?item=` 딥링크. `middleware.ts` matcher 에 `js`·`webmanifest` 제외 추가(**PWA 자산이 인증 가드에 걸려 로그인 HTML 로 리다이렉트되던 버그** 수정). 안드로이드는 이걸로 공유 시트에 LinkScape 가 뜨고 담긴다(네이티브 코드 없이).
+- **Capacitor 안드로이드 앱** — `capacitor.config.ts`(appId `app.linkscape`, `server.url`→Vercel 하이브리드 PoC), `android/` 네이티브 프로젝트. `gradlew assembleDebug` 성공(APK). `npm run cap:android` 로 Studio 열어 에뮬레이터 Run. **iOS 는 macOS/Xcode 필요(Windows 불가)**. 자세한 계획·다음 단계는 `app-plan.md`.
 
 ### 주요 서브시스템 상세
 
@@ -155,6 +176,10 @@ whale-extension/              ★ 웨일/크롬 확장 (전체가 순수 JS)
 | 확장 담기 성공인데 "실패" 표시 | PostgREST INSERT 는 본문 없는 201 — `res.json()` 강제 금지 (api.js `rest()`) |
 | Chrome 137+ `--load-extension` 제거 | 확장 E2E 는 `popup.html` 을 file:// 로 직접 열어 검증(api.js localStorage 폴백) |
 | CDP 로 더블클릭 안 만들어짐 | down/up 후 `down({clickCount:2})/up({clickCount:2})` |
+| **워드/한글을 인앱 뷰어로 못 띄움** | 브라우저가 원격 오피스 문서를 iframe 에서 렌더 안 하고 다운로드(웨일도). → 오피스는 **Office Online 임베드**(`view.officeapps.live.com`), 한글은 원본 iframe+다운로드 안내. HWP 웹 뷰어 없음 |
+| 파일 열기 시 서명 URL 이 **UUID 이름**으로 다운로드 | 원격 서명 URL(`/…/<uuid>.hwp`)을 새 탭으로 열면 이름이 UUID. → **blob+`a[download]`** 로 원래 파일명 다운로드(한글 이름 보존 — 위 다운로드 이슈와 같은 해법) |
+| Capacitor Android 빌드 **경로 거부** | 프로젝트 경로에 한글(비-ASCII: `…/바탕 화면/pdf링크서비스`) → AGP 거부. `android/gradle.properties` 에 `android.overridePathCheck=true`. 장기적으론 ASCII 경로 권장 |
+| PWA 매니페스트/SW 가 **로그인으로 리다이렉트** | `middleware.ts` matcher 가 `.webmanifest`·`.js` 미제외 → 인증 가드가 HTML 리다이렉트. matcher 제외 목록에 추가 |
 
 ---
 
@@ -164,7 +189,9 @@ whale-extension/              ★ 웨일/크롬 확장 (전체가 순수 JS)
 - 태그 입력 UI 제거됨(사용자 요청). 필터바 코드·DB 스키마는 남아 있음
 - Next 16 `middleware.ts` deprecation 경고(동작 무관, 방치)
 - 실기기(폰·웨일 브라우저) 검증은 사용자 수동 확인 의존 — 코드 레벨 E2E 는 완료
-- **만들지 않은 것**: 페이지 스냅샷 아카이브 / PDF 하이라이트 / AI 자동 태깅 / 모바일 전용 앱
+- **파일 뷰어**: 오피스 문서는 **Office Online**(파일이 MS 서버로 전달 — 프라이버시 트레이드오프, 사용자가 수용). **한글(.hwp)은 웹 뷰어가 없어** 인앱 미리보기 불가 → 원본 iframe(대개 빈 화면)+다운로드. 원하면 대안(자체 변환 서비스 등) 검토
+- **앱화(PWA/Capacitor)**: `app-plan.md` 참고. 남은 것 = P1 정적 번들(board 서버→클라, unfurl→Edge Function, `output:export`) → 네이티브 공유(Android ACTION_SEND / iOS Share Extension) → iOS 빌드(**Mac 필요**) → 스토어 제출(개발자 계정 없음). 현재 Capacitor 는 `server.url`→Vercel 하이브리드 PoC(빌드만 검증, 에뮬레이터 미실행)
+- **만들지 않은 것**: 페이지 스냅샷 아카이브 / PDF 하이라이트 / AI 자동 태깅
 
 ---
 
@@ -181,19 +208,20 @@ whale-extension/              ★ 웨일/크롬 확장 (전체가 순수 JS)
   테스트 계정 `pdflinkin.e2e.test@gmail.com`(비밀번호는 Claude 메모리 `linkscape-e2e-setup`). 실사용자 보드와 분리
   - dev 서버가 port 3000 에 남아 있거나 전 페이지 404(Turbopack+OneDrive 글리치)면 서버 껐다 켜기
 - **확장 설치**: `whale://extensions` → 개발자 모드 → 압축해제 → `whale-extension/`. 코드 수정 후 새로고침(⟳)
+- **앱(Capacitor) 빌드**: `npm run cap:sync`(웹 변경 반영) → `npm run cap:android`(Studio 열기) → 에뮬레이터 Run. CLI 빌드: `android/` 에서 `JAVA_HOME`=Studio JBR(`C:\Program Files\Android\Android Studio\jbr`) 로 `.\gradlew.bat assembleDebug`. Android SDK=`%LOCALAPPDATA%\Android\Sdk`(`android/local.properties` 에 sdk.dir). **iOS 는 Mac 필요**. 상세는 `app-plan.md`
 
 ---
 
 ## 8. 다음 채팅에서 가장 먼저 할 일
 
-0. 이번 세션 4개 개선(딥링크·OG 백필·스토리지 정리·웹 목록 보기)은 **커밋·푸시 완료**(4종 검증 E2E 14/14). Vercel 자동 배포 확인.
+0. **⚠️ 먼저: 워킹 트리의 미커밋 작업을 리뷰 후 커밋** — 파일 업로드/뷰어 · PWA · Capacitor 안드로이드(+`app-plan.md`). 각각 4종 검증은 통과 상태. 파일/PWA(웹)와 Capacitor(android/·설정)를 나눠 커밋하거나 한 번에. `plan1.md`·`android/local.properties`·빌드 산출물은 커밋 대상 아님(gitignore 됨). 한글 커밋은 `git commit -F`.
 1. **사용자 피드백 대기 상태** — 최근 흐름은 "실사용하며 UI/UX 다듬기". 새 요청이 오면 9번 규칙 안에서 바로 구현.
-2. 요청이 없을 때 개선 후보:
-   - 확장 팝업 목록/검색도 웹처럼 카드 미리보기·정렬 옵션 확장
+2. 앱화 진행은 `app-plan.md` 로드맵(P1 정적 번들 → 네이티브 공유 → iOS/스토어). 그 외 개선 후보:
    - 목록 보기(웹·확장) 정렬 기준 선택(색/최근/이름) · 보드 접기
-   - 태그/AI 자동 분류(만든 적 없음)
+   - 파일 뷰어 대안(한글 미리보기), 태그/AI 자동 분류(만든 적 없음)
 3. 검증은 반드시 헤드리스 E2E 로 실동작 확인. 커밋 전 4종(9번 마지막) 필수.
    - **E2E 함정**: 스토리지 파일 존재 확인은 **GET 객체 엔드포인트 금지**(CDN 엣지 캐시가 삭제 후에도 stale 200) → `POST /storage/v1/object/list/files` (list) 로 확인.
+   - 파일 업로드 E2E 는 `input[type=file]` 에 `elementHandle.uploadFile(path)`. 다운로드 파일명 검증은 `Page.setDownloadBehavior` 로 폴더 지정 후 `readdirSync`.
 
 ---
 
@@ -201,7 +229,8 @@ whale-extension/              ★ 웨일/크롬 확장 (전체가 순수 JS)
 
 ### 아키텍처 (변경 금지)
 - **저장은 스냅샷 diff 하나로만**: 모든 변경은 `useBoard.apply()`(히스토리)/`applyLive()`(드래그 중).
-  Supabase 직접 write 금지 (예외: `extracted_text`, 휴지통 영구삭제, 보드 CRUD, 확장 REST 경로)
+  Supabase 직접 write 금지 (예외: `extracted_text`, 휴지통 영구삭제, 보드 CRUD, 확장 REST 경로,
+  목록의 **다른-보드 카드 소프트삭제**(스토어에 없어 apply 불가), PWA `/share` 담기)
 - **realtime 수신은 `applyRemote` 로만** — 저장 큐/언두 절대 안 탐 (에코 루프 방지)
 - **`extracted_text` 는 브라우저 상태에 절대 안 담음** (서버 로드·realtime·upsert 페이로드에서 전부 제거)
 - **PDF 처리는 전부 클라이언트**. 서버 함수는 `/api/unfurl` 하나뿐

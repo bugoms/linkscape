@@ -94,11 +94,11 @@ export function useBoardActions() {
     }
   }, []);
 
-  /** 카드 종류에 맞는 "열기" — PDF/이미지는 뷰어, 링크는 새 탭. */
+  /** 카드 종류에 맞는 "열기" — PDF/이미지/일반파일은 인앱 뷰어, 링크는 새 탭. */
   const openItem = useCallback((itemId: string) => {
     const item = useBoard.getState().items[itemId];
     if (!item) return;
-    if (item.kind === "pdf" || item.kind === "image") {
+    if (item.kind === "pdf" || item.kind === "image" || item.kind === "file") {
       useViewer.getState().open(itemId);
       return;
     }
