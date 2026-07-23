@@ -1,6 +1,6 @@
 # 인수인계 메모 (LinkScape)
 
-> 마지막 갱신: 2026-07-21 / 최신 작업: **그리기(펜 노트)** · **그룹 유동 크기+겹침 방지** · **프레임 불투명 배경** · **확장 목록 행 이름수정** · 팝업 메뉴 불투명(`.glass-solid`) · (그 전) 한글 뷰어(hwp.js)·확장 드롭존·15일 자동 휴지통 정리·상태표시줄 안전영역.
+> 마지막 갱신: 2026-07-21 / 최신 작업: **그리기=캔버스 잉크(카드 아님)** · **오버레이 Ctrl+휠 캔버스 줌** · **그룹 유동 크기+겹침 방지** · **프레임 불투명 배경** · **확장 목록 행 이름수정** · 팝업 메뉴 불투명(`.glass-solid`).
 > 브랜치 `main`. **위 작업 전부 커밋·푸시 완료**(각각 4종 검증 통과). 미추적 `plan1.md`·`chrome-store-listing.skill` 은 커밋 대상 아님(스크래치). 이 문서는 구 `HANDOFF.md` 를 이름만 바꾼 것.
 > 상태: **Vercel 배포 동작 중**, Supabase 마이그레이션 0001·0002 실행 완료, 헤드리스 E2E 검증 체계 구축, **Capacitor 안드로이드 에뮬레이터 실행·설치·로그인 확인**.
 > **⚠️ 에뮬레이터에서 눈으로 확인할 것 2개는 §6 맨 위 "확인 대기" 참고**(상태표시줄 겹침 수정이 안드로이드 env() 로 먹는지 등).
@@ -18,7 +18,7 @@
 - 빈 곳 더블클릭 → 메모 / 카드 더블클릭 → 열기·편집
 - **좌클릭 드래그(빈 곳) = 선택 올가미**(Partial). 팬 = 스페이스/휠클릭/터치
 - **그룹**: 여러 방법 — ① 툴바 "그룹 ▾" → 사각형/자유형 올가미로 영역 감싸기, ② "그룹 ▾" → **"선택한 카드 묶기"**(현재 선택을 묶음), ③ 카드를 프레임 안으로 드래그(밖으로 끌면 빠짐). **선택에 기존 프레임이 있으면 그 그룹에 추가**. **프레임은 자식에 맞춰 유동적으로 커지고 줄어들며**(들어오면 확장, 빠지면 축소 — 포함 여부가 눈에 보임), 들어온 카드는 형제와 **겹치지 않게 계단식(+24px)으로 비켜** 놓인다. **모바일**: 하단 "그룹" → **묶기 모드**(카드를 탭해 고르고 "완료")
-- **그리기(펜 노트)**: 툴바 "그리기"(모바일 "펜") → 펜으로 긋고(색 6종: 잉크+분류색 5) "완료" → **그린 자리에 그 크기 그대로 이미지 카드**(SVG 원본 + JPEG 썸네일 업로드, kind=image — 스키마 변경 없음)
+- **그리기(캔버스 잉크)**: 툴바 "그리기"(모바일 "펜") → 펜으로 긋고(색 6종: 잉크+분류색 5) "완료" → **카드가 아니라 캔버스에 획이 그대로 남는다**(투명 SVG 잉크, `StrokeNode`). 선택하면 점선 외곽선, 이동·삭제·언두·실시간은 일반 아이템과 동일. 오버레이 중에도 **Ctrl+휠 = 캔버스 줌**(커서 고정), 휠 = 팬
 - **여러 보드**: 로고 옆 `BoardSwitcher` 로 보드 생성·전환·이름변경·삭제
 - **실시간**: 확장·다른 탭에서 담으면 새로고침 없이 즉시 캔버스에 나타남
 - **우클릭 메뉴** (카드: 열기·복제·삭제 / 빈 곳: 메모·그룹 추가(빈 프레임)·붙여넣기·화면 맞추기)
@@ -69,7 +69,8 @@ src/
     ServiceWorkerRegister.tsx /sw.js 등록 (설치형·오프라인 셸)  components/board/
     BoardClient.tsx           조립 + 태그필터바 + 빈 캔버스 안내 + useRealtime/usePdfBackfill 호출
     Canvas.tsx                ★ RF 캔버스. 올가미/팬/우클릭 메뉴/단축키/드롭/settleDrag(겹침 해소+프레임 fit). GroupLasso·DrawLayer 렌더
-    DrawLayer.tsx             ★ 그리기(펜) 오버레이 — 획 수집(색 6종) → SVG+JPEG 썸네일 → addDrawing
+    DrawLayer.tsx             ★ 그리기 오버레이 — 획을 flow 좌표로 수집(색 6종) → SVG 데이터 URL → addDrawing(캔버스 잉크)
+    useWheelPanZoom.ts        ★ 오버레이(올가미·그리기) 위 휠 팬/줌 — non-passive 리스너로 Ctrl+휠 페이지 줌 차단, RF 뷰포트 직접 조작
     BoardSwitcher.tsx         ★ 보드 목록·전환·이름변경(인라인)·삭제(confirm)·생성 드롭다운
     GroupLasso.tsx            ★ 올가미 오버레이(사각형/자유형) + 감쌈 판정 + 프레임 생성
     useRealtime.ts            ★ realtime 구독 → applyRemote 로만 반영
@@ -77,13 +78,13 @@ src/
     Inspector.tsx             단일 선택 패널. 라벨 "제목", 색(토큰5+커스텀 피커), 다운로드 버튼
     Viewer.tsx                PDF·이미지·파일 뷰어(오피스=Office Online, 한글=hwp.js 벤더 렌더, 이어읽기, 다운로드)
     useBoardActions.ts        삭제/복제/엣지삭제/열기/★groupSelected(선택→그룹, 기존 프레임 있으면 추가+키움) 공용
-    useIngest.ts              ★ 링크/파일 → 카드 생성. addFiles 는 모든 형식 허용(PDF/이미지 외=file). addDrawing=펜 그림 SVG 업로드
+    useIngest.ts              ★ 링크/파일 → 카드 생성. addFiles 는 모든 형식 허용(PDF/이미지 외=file). addDrawing=펜 잉크(데이터 URL, 업로드 없음)
     usePdfBackfill.ts         썸네일 없는 PDF 자동 보정 (확장 업로드분)
     useLinkBackfill.ts        ★ 확장 링크 카드에 OG 메타 백필 (변경 시에만 apply)
     useTrashAutoPurge.ts      ★ 15일 지난 휴지통 카드를 스토리지 파일까지 자동 영구삭제(보드 열 때, 전 보드)
     ListPanel.tsx             ★ 웹 목록 보기 — 전 보드 조회·그룹·색정렬·검색·삭제·클릭 딥링크
     ContextMenu.tsx, SearchPalette.tsx, TrashPanel.tsx
-    nodes/                    CardShell(색=외곽선), Link/Pdf/Image/Note/File/FrameNode, types.ts
+    nodes/                    CardShell(색=외곽선), Link/Pdf/Image/Note/File/Stroke/FrameNode, types.ts(isStrokeItem)
                              (FileNode = 일반 파일 카드: 아이콘+확장자 배지, 열기=뷰어/다운로드)  store/
     board.ts                  ★★ 스냅샷 diff 저장 큐 + 언두/리두 + applyRemote/hasPending. 심장
     groupMode.ts              캔버스 오버레이 모드(null|'rect'|'free'|'pick'|'draw'). 'pick'=모바일 묶기, 'draw'=그리기
@@ -153,7 +154,15 @@ app-plan.md                   ★ 앱화(모바일) 계획·진행 상태 (PWA·
 - **그룹 유동 크기 + 겹침 방지** — `settleDrag`(Canvas)가 소속 변경 시: 들어온 카드는 형제와 겹치면 **+24px 계단식으로 비켜**(`resolveOverlapInFrame`, 최소 간격 12px), 소속이 바뀐 프레임(들어간 곳·나온 곳 모두)은 **자식 전부+여백 32px 에 딱 맞게 키우거나 줄인다**(`fitFrameToChildren` — geometry.ts 공용, `groupSelected` 도 같은 규칙). 빈 프레임은 안 건드림(의도적 빈 그룹 보호). 최소 크기 240×180 유지.
 - **프레임 배경 불투명** — `FRAME_COLORS` 의 2~4% 알파 배경(`#0066cc08` 등)이 캔버스 점무늬가 비쳐 흐릿하던 것을 **흰색에 12% 섞은 불투명 파스텔 고정 hex**(sky `#ebf4fe` 등)로. 커스텀 색 프레임은 `color-mix(in srgb, <색> 12%, #ffffff)` (FrameNode 인라인).
 - **그리기(펜 노트)** — `DrawLayer.tsx` 오버레이(GroupLasso 와 같은 구조 — 화면 좌표로 획을 받고 완료 시 flow 좌표 변환). 색 6종(잉크+분류색 5)·마지막 획 취소·Esc 취소. 완료 시 **SVG 원본 + JPEG 썸네일(긴 변 640)** 을 스토리지에 올리고 `useIngest.addDrawing` 이 **kind='image'** 카드로 생성(그린 자리·그린 크기 그대로) — **item_kind enum 은 안 건드림(스키마 변경 없음)**. groupMode 에 'draw' 모드 추가(상호배제 공짜). 모바일 하단 바 "펜" + Utility compact 변형(버튼 7개 폭 맞춤).
-- **확장 목록 행 아이콘 정리** — 행 hover 의 "↦ 보드에서 보기" 버튼 제거(상단 "보드 열기 ↗"는 유지 — 사용자 명시 요청), 그 자리에 **이름수정(연필)** 추가: 클릭 → 행 위 인라인 입력(`.row-edit`) → Enter/blur 커밋(낙관적 반영, 실패 시 원복), `api.renameItem`(PATCH title). 아이콘 세로 중앙정렬을 `top:50%+translateY` 대신 **`top:0;bottom:0;margin:auto 0`** 로 보장.
+- **확장 목록 행 아이콘 정리** — 행 hover 의 "↦ 보드에서 보기" 버튼 제거(상단 "보드 열기 ↗"는 유지 — 사용자 명시 요청), 그 자리에 **이름수정(연필)** 추가: 클릭 → 행 위 인라인 입력(`.row-edit`) → Enter/blur 커밋(낙관적 반영, 실패 시 원복), `api.renameItem`(PATCH title). 아이콘 둘은 **`.row-actions` flex 컨테이너**(absolute, top:0/bottom:0, align-items:center) 하나로 우측 세로 중앙 고정 — 개별 absolute 배치는 불안정해 폐기.
+
+#### 이번 세션 3 (그리기=캔버스 잉크·오버레이 휠 줌 — E2E 23/23 통과)
+
+- **그리기 = 캔버스 잉크** (사용자 요청: "펜메모 카드가 아니라 그냥 캔버스에 그리기") — 완료 시 카드 대신 **투명 SVG 잉크가 캔버스에 그대로 남는다**. 구현: SVG 를 **데이터 URL 로 `og_image_url` 에 저장**(스토리지·서명 URL·썸네일 전부 불필요, og_image_url 은 검색 인덱스 컬럼도 아님), kind='image' 재사용(스키마 변경 없음), `isStrokeItem()`(kind=image + storage_path 없음 + og_image_url 이 data:image/svg)으로 판별해 RF 노드 타입 'stroke'(`StrokeNode` — 카드 크롬 없이 `<img>` 만, 선택 시 점선 외곽선) 로 렌더. 우클릭 메뉴에서 "열기" 제외(잉크는 열 원본 없음). 이동·삭제·언두·실시간·휴지통 전부 일반 아이템 경로 그대로.
+- **오버레이(올가미·그리기) 위 휠 팬/줌** — 오버레이는 RF 밖 형제 요소라 휠이 캔버스에 안 닿고 **Ctrl+휠이 브라우저 페이지 줌으로 새던 버그** 수정. `useWheelPanZoom`: non-passive 네이티브 wheel 리스너로 preventDefault + RF `setViewport` 직접 조작(Ctrl/⌘+휠 = 커서 고정 줌 1.12배율·한계 0.1~2.5 = RF 와 동일, 휠 = 팬, Shift+휠 = 가로 팬). React onWheel 은 passive 라 못 쓴다.
+- **올가미·그리기 좌표를 flow 로 즉시 변환** — 기존엔 화면(client) 좌표로 모았다가 완료 시 일괄 변환했는데, 이제 중간에 팬/줌이 가능하므로 **캡처 즉시 `screenToFlowPosition`** 으로 바꿔 저장하고 미리보기는 `flowToScreenPosition` + `useViewport()` 구독으로 되그린다 — 팬/줌해도 궤적이 캔버스에 붙어 있다.
+- **그룹 제목 폰트 14→16px** (FrameNode 라벨·편집 입력 동일).
+- **확장 목록 아이콘 재안정화** — 연필·휴지통을 `.row-actions` flex 컨테이너로 묶어 우측 세로 중앙 고정(위 세션 2 항목에 반영).
 
 ### 주요 서브시스템 상세
 
@@ -196,6 +205,7 @@ app-plan.md                   ★ 앱화(모바일) 계획·진행 상태 (PWA·
 | PWA 매니페스트/SW 가 **로그인으로 리다이렉트** | `middleware.ts` matcher 가 `.webmanifest`·`.js` 미제외 → 인증 가드가 HTML 리다이렉트. matcher 제외 목록에 추가 |
 | **네이티브 앱/PWA 에서 상단 바가 상태표시줄과 겹침** | 전체화면 웹뷰는 상태표시줄 밑까지 그림. `top-2`(8px)만으론 겹침. → `env(safe-area-inset-*)` 로 상단 바·하단 액션 바·뷰어를 안전영역만큼 밀기(globals.css `.inset-safe-top/bottom`·`.pad-safe-top`). 브라우저에선 env=0 이라 기존과 동일. **⚠️ 안드로이드 Capacitor 웹뷰에서 env() 가 채워지는지 미검증(§6 확인 대기)** |
 | **불투명 메뉴 배경에 `var(--color-canvas)` 를 썼더니 완전 투명** | Tailwind v4 는 유틸·다른 규칙에서 참조 안 하는 `@theme` 변수를 `:root` 로 안 내보낼 수 있음 → 커스텀 CSS 의 `var(--color-canvas)` 미해결 → `background` 무효 → 배경 안 칠해지고 blur 도 빠져 오히려 더 비침. **커스텀 CSS 에선 리터럴(`#ffffff`)** 을 쓸 것(`.glass-solid`) |
+| **오버레이(올가미·그리기)에서 Ctrl+휠이 브라우저 페이지 줌** | 오버레이는 RF 밖 형제 요소 — 휠이 캔버스에 안 닿고 기본 동작(페이지 줌)으로 샘. React `onWheel` 은 **passive 로 붙어 preventDefault 무효** → 네이티브 `addEventListener("wheel", fn, {passive:false})` 로 가로채 RF `setViewport` 직접 조작(`useWheelPanZoom`). 오버레이 좌표는 캡처 즉시 flow 로 변환해 둬야 중간 팬/줌에도 궤적이 안 틀어짐 |
 
 ---
 
