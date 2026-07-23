@@ -1,6 +1,6 @@
 # 인수인계 메모 (LinkScape)
 
-> 마지막 갱신: 2026-07-21 / 최신 작업: **그리기=캔버스 잉크(카드 아님)** · **오버레이 Ctrl+휠 캔버스 줌** · **그룹 유동 크기+겹침 방지** · **프레임 불투명 배경** · **확장 목록 행 이름수정** · 팝업 메뉴 불투명(`.glass-solid`).
+> 마지막 갱신: 2026-07-21 / 최신 작업: **뷰어 Esc·뒤로가기 닫기 수정** · **확장 새 아이콘** · **그리기=캔버스 잉크** · **오버레이 Ctrl+휠 캔버스 줌** · **그룹 유동 크기+겹침 방지** · **프레임 불투명 배경** · **확장 목록 행 이름수정**.
 > 브랜치 `main`. **위 작업 전부 커밋·푸시 완료**(각각 4종 검증 통과). 미추적 `plan1.md`·`chrome-store-listing.skill` 은 커밋 대상 아님(스크래치). 이 문서는 구 `HANDOFF.md` 를 이름만 바꾼 것.
 > 상태: **Vercel 배포 동작 중**, Supabase 마이그레이션 0001·0002 실행 완료, 헤드리스 E2E 검증 체계 구축, **Capacitor 안드로이드 에뮬레이터 실행·설치·로그인 확인**.
 > **⚠️ 에뮬레이터에서 눈으로 확인할 것 2개는 §6 맨 위 "확인 대기" 참고**(상태표시줄 겹침 수정이 안드로이드 env() 로 먹는지 등).
@@ -164,6 +164,14 @@ app-plan.md                   ★ 앱화(모바일) 계획·진행 상태 (PWA·
 - **그룹 제목 폰트 14→16px** (FrameNode 라벨·편집 입력 동일).
 - **확장 목록 아이콘 재안정화** — 연필·휴지통을 `.row-actions` flex 컨테이너로 묶어 우측 세로 중앙 고정(위 세션 2 항목에 반영).
 
+#### 이번 세션 4 (뷰어 닫기·확장 아이콘 — E2E 16/16 통과)
+
+- **뷰어가 Esc·뒤로가기로 안 닫히던 문제** (§5 표 마지막 두 줄에 원인 정리) — `Viewer` 에 ① 열 때 대화상자 포커스(`role="dialog"`, `tabIndex=-1`) ② iframe 이 포커스를 가져갔을 때 **포인터가 iframe 밖으로 나오면 회수**(`onPointerMove` → `reclaimFocus`) ③ `history.pushState`/`popstate` 로 **뒤로가기 = 뷰어 닫기**(보드 이탈 안 함), 닫기 버튼·Esc 는 `requestClose` 로 히스토리 항목까지 정리. **교차 출처 iframe 안에 포커스가 있는 동안은 브라우저 보안상 Esc 를 받을 수 없다** — 그 경우의 확실한 탈출구가 뒤로가기와 닫기 버튼.
+- **뷰어 열린 동안 캔버스 단축키 차단** — `Canvas` 의 window keydown 이 뷰어 위에서도 살아 있어 **Delete 가 뒤에 선택된 카드를 조용히 휴지통으로** 보냈다(Ctrl+Z·Ctrl+D·F 도 동일). `useViewer.getState().itemId` 가 있으면 전부 무시.
+- **확장 아이콘 교체** — 사용자 제공 `whale-extension/icons/icons.png`(누끼 완료 2400×1357)에서 아트워크 bbox 를 정사각 크롭해 `icon16/48/128.png` 재생성(알파 보존). manifest 경로는 그대로.
+- **확장 목록 그룹 안 행 아이콘 찌그러짐** — 광역 선택자 `#item-list button`(+`li.child button{padding-left:18px}`)이 특이도로 아이콘 버튼까지 침범. 행 본문에 **`.row-main`** 클래스를 줘 분리. 전 행 편차 0px 실측.
+- **긴 제목이 아이콘과 겹침** — 행 본문에 `padding-right:66px`(아이콘 영역 폭)을 **상시** 확보해 제목이 그 앞에서 말줄임. hover 때만 주면 글자가 튄다.
+
 ### 주요 서브시스템 상세
 
 **여러 보드**
@@ -206,6 +214,8 @@ app-plan.md                   ★ 앱화(모바일) 계획·진행 상태 (PWA·
 | **네이티브 앱/PWA 에서 상단 바가 상태표시줄과 겹침** | 전체화면 웹뷰는 상태표시줄 밑까지 그림. `top-2`(8px)만으론 겹침. → `env(safe-area-inset-*)` 로 상단 바·하단 액션 바·뷰어를 안전영역만큼 밀기(globals.css `.inset-safe-top/bottom`·`.pad-safe-top`). 브라우저에선 env=0 이라 기존과 동일. **⚠️ 안드로이드 Capacitor 웹뷰에서 env() 가 채워지는지 미검증(§6 확인 대기)** |
 | **불투명 메뉴 배경에 `var(--color-canvas)` 를 썼더니 완전 투명** | Tailwind v4 는 유틸·다른 규칙에서 참조 안 하는 `@theme` 변수를 `:root` 로 안 내보낼 수 있음 → 커스텀 CSS 의 `var(--color-canvas)` 미해결 → `background` 무효 → 배경 안 칠해지고 blur 도 빠져 오히려 더 비침. **커스텀 CSS 에선 리터럴(`#ffffff`)** 을 쓸 것(`.glass-solid`) |
 | **오버레이(올가미·그리기)에서 Ctrl+휠이 브라우저 페이지 줌** | 오버레이는 RF 밖 형제 요소 — 휠이 캔버스에 안 닿고 기본 동작(페이지 줌)으로 샘. React `onWheel` 은 **passive 로 붙어 preventDefault 무효** → 네이티브 `addEventListener("wheel", fn, {passive:false})` 로 가로채 RF `setViewport` 직접 조작(`useWheelPanZoom`). 오버레이 좌표는 캡처 즉시 flow 로 변환해 둬야 중간 팬/줌에도 궤적이 안 틀어짐 |
+| **뷰어에서 Esc 가 "가끔" 안 먹음** | 문서 미리보기는 **교차 출처 iframe**(오피스=Office Online, txt 등=서명 URL). 그 안을 클릭하면 포커스가 iframe 으로 넘어가고 **keydown 이 부모 창에 아예 안 닿는다**(브라우저 보안 경계 — 부모에서 키를 가로챌 방법 없음). PDF·이미지·한글은 iframe 이 아니라 원래 잘 닫혔다. → ① 열 때 대화상자(`tabIndex=-1`)에 포커스 ② **포인터가 iframe 밖(헤더·여백)으로 나오면 포커스 회수**(iframe 위에선 핸들러가 안 불려 문서 조작을 방해 안 함) ③ 히스토리 항목으로 뒤로가기 닫기. E2E 로 `iframe 포커스 상태 Esc → 닫힘=false` 재현 확인 |
+| **모바일 뒤로가기가 뷰어가 아니라 보드를 벗어남** | 뷰어는 히스토리 항목이 아니었음 → back 이 이전 페이지로 감. 열 때 `history.pushState({lsViewer})`, `popstate` 에서 close. 닫기 버튼·Esc 는 `close()` 후 우리가 쌓은 항목이 현재 상태일 때만 `history.back()` 으로 정리(잔여 항목·중복 back 없음). dev StrictMode 이중 실행 대비 pushState 는 멱등 |
 
 ---
 
