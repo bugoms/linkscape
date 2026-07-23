@@ -16,6 +16,14 @@ export default function Viewer() {
   const close = useViewer((s) => s.close);
   const item = useBoard((s) => (itemId ? s.items[itemId] : undefined));
   const [downloading, setDownloading] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  /** 닫기 — 열 때 쌓아 둔 히스토리 항목까지 정리한다.
+   *  (뒤로가기로 닫힌 경우엔 이미 사라졌으므로 back 을 부르지 않는다) */
+  const requestClose = useCallback(() => {
+    close();
+    if (window.history.state?.lsViewer) window.history.back();
+  }, [close]);
 
   async function download() {
     if (!item?.storage_path || downloading) return;
@@ -34,17 +42,55 @@ export default function Viewer() {
 
   useEffect(() => {
     if (!itemId) return;
+
+    // 열자마자 Esc 가 먹도록 대화상자 자체에 포커스를 준다
+    // (안 그러면 포커스가 캔버스 노드/바디에 남아 있다가 iframe 에 뺏길 수 있다)
+    dialogRef.current?.focus({ preventScroll: true });
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        requestClose();
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [itemId, close]);
+
+    // 뷰어를 히스토리 항목으로 만든다 — 안드로이드/브라우저 뒤로가기가
+    // 보드를 벗어나지 않고 뷰어만 닫는다. (dev StrictMode 중복 실행 대비 멱등)
+    if (!window.history.state?.lsViewer) {
+      window.history.pushState({ lsViewer: itemId }, "");
+    }
+    const onPop = () => close();
+    window.addEventListener("popstate", onPop);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("popstate", onPop);
+    };
+  }, [itemId, close, requestClose]);
+
+  /** 교차 출처 iframe(오피스 뷰어·문서 미리보기)이 포커스를 가져가면 keydown 이
+   *  부모 창에 아예 안 닿아 Esc 가 죽는다. 포인터가 iframe 밖(헤더·여백)으로
+   *  나오는 순간 포커스를 되찾아 Esc 를 되살린다.
+   *  — iframe 위에 있는 동안엔 이 핸들러가 불리지 않으므로 문서 조작을 방해하지 않는다. */
+  const reclaimFocus = useCallback(() => {
+    if (document.activeElement?.tagName === "IFRAME") {
+      dialogRef.current?.focus({ preventScroll: true });
+    }
+  }, []);
 
   if (!itemId || !item) return null;
 
   return (
-    <div className="pad-safe-top fixed inset-0 z-50 flex flex-col bg-parchment">
+    <div
+      ref={dialogRef}
+      tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      aria-label={item.title || item.file_name || "미리보기"}
+      onPointerMove={reclaimFocus}
+      className="pad-safe-top fixed inset-0 z-50 flex flex-col bg-parchment outline-none"
+    >
       <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-hairline bg-canvas/80 px-5 backdrop-blur-xl backdrop-saturate-150">
         <span className="truncate text-[17px] font-semibold tracking-[-0.01em] text-ink">
           {item.title || item.file_name || "보기"}
@@ -59,7 +105,10 @@ export default function Viewer() {
               {downloading ? "다운로드 중…" : "다운로드 ↓"}
             </button>
           )}
-          <button onClick={close} className="text-[14px] text-action transition">
+          <button
+            onClick={requestClose}
+            className="text-[14px] text-action transition"
+          >
             닫기 (Esc)
           </button>
         </div>

@@ -36,6 +36,7 @@ import { extractUrls } from "@/lib/url";
 import { useBoard } from "@/store/board";
 import { useGroupMode } from "@/store/groupMode";
 import { useSelection } from "@/store/selection";
+import { useViewer } from "@/store/viewer";
 
 import ContextMenu, { type MenuEntry } from "./ContextMenu";
 import DrawLayer from "./DrawLayer";
@@ -469,6 +470,9 @@ export default function Canvas({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
+      // 뷰어가 떠 있으면 캔버스 단축키를 막는다 — 안 그러면 Delete 가 뒤에 있는
+      // 카드를 휴지통으로 보내는 등 보이지 않는 곳에서 동작해 버린다
+      if (useViewer.getState().itemId) return;
       const mod = event.metaKey || event.ctrlKey;
 
       if (mod && event.key.toLowerCase() === "z") {
