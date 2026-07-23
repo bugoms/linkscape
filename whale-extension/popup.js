@@ -309,6 +309,7 @@ function bindMain() {
 
     const button = document.createElement("button");
     button.type = "button";
+    button.className = "row-main"; // 행 본문 전용 — 아이콘 버튼과 스타일 분리
 
     if (isChild) {
       // 그룹에 종속됨을 나타내는 ㄴ자 연결선

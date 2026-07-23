@@ -249,7 +249,7 @@ header .text-action {
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 11px 12px 6px;
+  padding: 9px 12px;
   border-top: 1px solid var(--hairline);
   font-size: 12px;
   font-weight: 700;
@@ -284,7 +284,7 @@ header .text-action {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px 6px;
+  padding: 7px 12px;
   background: var(--group-fill);
   border-top: 1px solid var(--divider);
   font-size: 12px;
@@ -314,7 +314,10 @@ header .text-action {
   position: relative;
 }
 
-#item-list button {
+/* 행 본문 버튼만 — 아이콘 버튼(.row-rename/.row-delete)에 절대 새지 않게 클래스로 한정한다.
+ * (예전 `#item-list button` 광역 선택자가 li.child 의 padding-left 를 아이콘 버튼에도
+ *  먹여 그룹 안 행의 아이콘이 찌그러졌다) */
+#item-list .row-main {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -323,7 +326,7 @@ header .text-action {
   text-align: left;
 }
 
-#item-list button:hover {
+#item-list .row-main:hover {
   background: var(--parchment);
 }
 
@@ -383,7 +386,7 @@ header .text-action {
 }
 
 /* 이름 수정 인라인 입력 — 행 전체를 덮는다 */
-#item-list li.editing > button {
+#item-list li.editing > .row-main {
   visibility: hidden;
 }
 
@@ -401,7 +404,7 @@ header .text-action {
 }
 
 /* 그룹 소속 문서 — 그룹 헤더와 같은 색의 ㄴ자 연결선으로 종속 표시 */
-#item-list li.child button {
+#item-list li.child .row-main {
   padding-left: 18px;
 }
 
