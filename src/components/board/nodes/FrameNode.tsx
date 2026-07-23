@@ -73,12 +73,12 @@ export default function FrameNode({ data, selected }: NodeProps<FrameNodeType>) 
                   e.currentTarget.blur();
                 }
               }}
-              className="nodrag rounded-apple-sm border border-hairline bg-canvas px-2 py-1 text-[14px] text-ink outline-none transition focus:border-action-focus"
+              className="nodrag rounded-apple-sm border border-hairline bg-canvas px-2 py-1 text-[16px] text-ink outline-none transition focus:border-action-focus"
             />
           ) : (
             <button
               onDoubleClick={() => setEditing(true)}
-              className={`text-[14px] font-semibold tracking-[-0.01em] ${customColor ? "" : palette.title}`}
+              className={`text-[16px] font-semibold tracking-[-0.01em] ${customColor ? "" : palette.title}`}
               style={customColor ? { color: customColor } : undefined}
             >
               {frame.title || "무제"}

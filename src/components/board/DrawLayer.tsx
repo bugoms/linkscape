@@ -1,11 +1,12 @@
 "use client";
 
-import { useReactFlow } from "@xyflow/react";
+import { useReactFlow, useViewport } from "@xyflow/react";
 import { useEffect, useRef, useState } from "react";
 
 import type { Point } from "@/lib/geometry";
 
 import { useIngest } from "./useIngest";
+import { useWheelPanZoom } from "./useWheelPanZoom";
 
 /** 펜 색 — 잉크 + 카드 분류색 5종 (lib/palette.ts 스와치와 동일한 hex) */
 const PEN_COLORS = [
@@ -16,27 +17,32 @@ const PEN_COLORS = [
   "#e0687a",
   "#8c6fe0",
 ];
-/** 펜 굵기 — 캔버스(flow) 좌표 기준. 카드가 되면 그린 크기 그대로 담긴다 */
+/** 펜 굵기 — 캔버스(flow) 좌표 기준 px */
 const PEN_W = 3;
-/** 획 둘레 여백 (카드 가장자리에 딱 붙지 않게) */
+/** 획 둘레 여백 */
 const PAD = 12;
+/** 이보다 가까운 포인터 이동은 버린다 (화면 px — 데이터 크기 절약) */
+const MIN_DIST = 2;
 
-type Stroke = { color: string; points: Point[] }; // 화면(client) 좌표
+type Stroke = { color: string; points: Point[] }; // 캔버스(flow) 좌표
 
-/** 그리기 모드 오버레이 — 펜으로 긋고 "완료"하면 그린 자리에 이미지 카드가 된다.
- *  GroupLasso 처럼 화면 좌표로 받다가 완료 시점에 캔버스 좌표로 변환한다
- *  (오버레이가 포인터를 다 삼키므로 그리는 동안 팬/줌은 일어나지 않는다). */
+/** 그리기 모드 오버레이 — 펜으로 긋고 "완료"하면 캔버스에 잉크로 남는다(카드 아님).
+ *  획은 받자마자 flow 좌표로 바꿔 두므로 그리는 중에 휠 팬/줌을 해도 캔버스에 붙어 있다. */
 export default function DrawLayer({ onDone }: { onDone: () => void }) {
-  const { screenToFlowPosition, getViewport } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const overlayRef = useRef<HTMLDivElement>(null);
   const { addDrawing } = useIngest();
 
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [current, setCurrent] = useState<Stroke | null>(null);
   const [color, setColor] = useState(PEN_COLORS[0]);
-  // 진입 시점 줌 고정 — 미리보기 획 굵기를 캔버스 굵기와 맞추는 용도
-  const [zoom] = useState(() => getViewport().zoom);
   const activePointer = useRef<number | null>(null);
+  const lastClient = useRef<Point | null>(null);
+
+  // 오버레이가 휠을 삼키므로 팬/줌을 직접 처리 (Ctrl+휠 페이지 줌 방지)
+  useWheelPanZoom(overlayRef);
+  // 뷰포트 변화 구독 — 획 미리보기(화면 좌표)와 굵기를 현재 줌에 맞춘다
+  const { zoom } = useViewport();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -51,12 +57,21 @@ export default function DrawLayer({ onDone }: { onDone: () => void }) {
     if (activePointer.current !== null) return; // 두 번째 손가락은 무시
     activePointer.current = e.pointerId;
     overlayRef.current?.setPointerCapture(e.pointerId);
-    setCurrent({ color, points: [{ x: e.clientX, y: e.clientY }] });
+    lastClient.current = { x: e.clientX, y: e.clientY };
+    setCurrent({
+      color,
+      points: [screenToFlowPosition({ x: e.clientX, y: e.clientY })],
+    });
   }
 
   function onPointerMove(e: React.PointerEvent) {
     if (activePointer.current !== e.pointerId) return;
-    const p = { x: e.clientX, y: e.clientY };
+    const last = lastClient.current;
+    if (last && Math.hypot(e.clientX - last.x, e.clientY - last.y) < MIN_DIST) {
+      return;
+    }
+    lastClient.current = { x: e.clientX, y: e.clientY };
+    const p = screenToFlowPosition({ x: e.clientX, y: e.clientY });
     setCurrent((prev) =>
       prev ? { ...prev, points: [...prev.points, p] } : prev,
     );
@@ -65,30 +80,25 @@ export default function DrawLayer({ onDone }: { onDone: () => void }) {
   function onPointerUp(e: React.PointerEvent) {
     if (activePointer.current !== e.pointerId) return;
     activePointer.current = null;
+    lastClient.current = null;
     if (current && current.points.length >= 2) {
       setStrokes((s) => [...s, current]);
     }
     setCurrent(null);
   }
 
-  /** 그린 획들을 SVG 원본 + JPEG 썸네일로 만들어 이미지 카드로 저장 */
+  /** 획들을 하나의 SVG 로 묶어 캔버스 잉크 아이템으로 저장 */
   function commit() {
     if (strokes.length === 0) {
       onDone();
       return;
     }
 
-    // 화면 좌표 → 캔버스(flow) 좌표
-    const flowStrokes = strokes.map((s) => ({
-      color: s.color,
-      points: s.points.map((p) => screenToFlowPosition(p)),
-    }));
-
     let minX = Infinity;
     let minY = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
-    for (const s of flowStrokes) {
+    for (const s of strokes) {
       for (const p of s.points) {
         minX = Math.min(minX, p.x);
         minY = Math.min(minY, p.y);
@@ -101,7 +111,7 @@ export default function DrawLayer({ onDone }: { onDone: () => void }) {
     const ox = minX - PAD;
     const oy = minY - PAD;
 
-    const pathOf = (s: { points: Point[] }) =>
+    const pathOf = (s: Stroke) =>
       s.points
         .map(
           (p, i) =>
@@ -110,50 +120,17 @@ export default function DrawLayer({ onDone }: { onDone: () => void }) {
         .join(" ");
 
     const svgSource =
-      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${Math.ceil(w)} ${Math.ceil(h)}">` +
-      flowStrokes
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w.toFixed(1)} ${h.toFixed(1)}">` +
+      strokes
         .map(
           (s) =>
             `<path d="${pathOf(s)}" fill="none" stroke="${s.color}" stroke-width="${PEN_W}" stroke-linecap="round" stroke-linejoin="round"/>`,
         )
         .join("") +
       `</svg>`;
-    const svgBlob = new Blob([svgSource], { type: "image/svg+xml" });
 
-    // 썸네일(JPEG, 흰 종이 배경) — 카드 표면에 보일 이미지. 긴 변 640px 기준(기존 이미지 규칙)
-    const scale = Math.min(2, 640 / Math.max(w, h));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(w * scale));
-    canvas.height = Math.max(1, Math.round(h * scale));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      onDone();
-      return;
-    }
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    for (const s of flowStrokes) {
-      ctx.strokeStyle = s.color;
-      ctx.lineWidth = PEN_W * scale;
-      ctx.beginPath();
-      s.points.forEach((p, i) => {
-        const x = (p.x - ox) * scale;
-        const y = (p.y - oy) * scale;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-    }
-    canvas.toBlob(
-      (thumb) => {
-        if (thumb) addDrawing(svgBlob, thumb, { x: ox, y: oy, w, h });
-        onDone();
-      },
-      "image/jpeg",
-      0.85,
-    );
+    addDrawing(svgSource, { x: ox, y: oy, w, h });
+    onDone();
   }
 
   const visible = current ? [...strokes, current] : strokes;
@@ -170,7 +147,12 @@ export default function DrawLayer({ onDone }: { onDone: () => void }) {
         {visible.map((s, i) => (
           <polyline
             key={i}
-            points={s.points.map((p) => `${p.x},${p.y}`).join(" ")}
+            points={s.points
+              .map((p) => {
+                const sp = flowToScreenPosition(p);
+                return `${sp.x},${sp.y}`;
+              })
+              .join(" ")}
             fill="none"
             stroke={s.color}
             strokeWidth={PEN_W * zoom}

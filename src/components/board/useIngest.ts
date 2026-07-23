@@ -214,53 +214,23 @@ export function useIngest() {
     [place],
   );
 
-  /** 펜 드로잉을 SVG 원본 + JPEG 썸네일로 업로드해 이미지 카드로 만든다.
-   *  DB 의 item_kind enum 을 안 바꾸기 위해 kind='image' 를 그대로 쓴다(스키마 변경 없음).
-   *  rect 는 캔버스(flow) 좌표의 그림 영역 — 그린 자리에 그 크기 그대로 카드가 된다. */
+  /** 펜 그리기를 캔버스 잉크로 남긴다 — 카드가 아니라 그린 자리에 획만 보인다.
+   *  SVG 를 데이터 URL 로 og_image_url 에 담는다(스토리지·서명 URL 불필요,
+   *  검색 인덱스 컬럼도 아님). kind='image' 재사용이라 DB 스키마 변경 없음,
+   *  이동·삭제·언두·실시간은 일반 아이템과 동일 경로. 렌더는 StrokeNode. */
   const addDrawing = useCallback(
-    (
-      svg: Blob,
-      thumb: Blob,
-      rect: { x: number; y: number; w: number; h: number },
-    ) => {
-      const { userId } = useBoard.getState();
-      const supabase = createClient();
-
-      const item = place(
+    (svgSource: string, rect: { x: number; y: number; w: number; h: number }) =>
+      place(
         "image",
         { x: rect.x, y: rect.y },
         {
-          title: "펜 메모",
-          file_name: "펜 메모.svg",
-          file_size: svg.size,
+          title: "그림",
           mime_type: "image/svg+xml",
+          og_image_url: `data:image/svg+xml;utf8,${encodeURIComponent(svgSource)}`,
         },
         { w: rect.w, h: rect.h },
-      );
-
-      void (async () => {
-        try {
-          const filePath = `${userId}/${item.id}.svg`;
-          const thumbPath = `${userId}/${item.id}-thumb.jpg`;
-
-          await uploadBlob(supabase, filePath, svg, "image/svg+xml");
-          await uploadBlob(supabase, thumbPath, thumb, "image/jpeg");
-
-          const { data } = await supabase.storage
-            .from("files")
-            .createSignedUrl(thumbPath, 60 * 60 * 24 * 7);
-          if (data?.signedUrl) setSignedUrl(thumbPath, data.signedUrl);
-
-          patch(item.id, { storage_path: filePath, thumb_path: thumbPath });
-        } catch (err) {
-          console.error("[drawing] 저장 실패", err);
-          alert("그림 저장에 실패했습니다.");
-        }
-      })();
-
-      return item;
-    },
-    [place, patch, setSignedUrl],
+      ),
+    [place],
   );
 
   const addFrame = useCallback(

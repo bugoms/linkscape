@@ -1,11 +1,13 @@
 "use client";
 
-import { useReactFlow } from "@xyflow/react";
-import { useEffect, useRef, useState } from "react";
+import { useReactFlow, useViewport } from "@xyflow/react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { absolutePosition, pointInPolygon, type Point } from "@/lib/geometry";
 import { makeFrame, useBoard } from "@/store/board";
 import { useSelection } from "@/store/selection";
+
+import { useWheelPanZoom } from "./useWheelPanZoom";
 
 /** 프레임이 감싼 카드들 바깥으로 두는 여백 */
 const PAD = 32;
@@ -19,11 +21,21 @@ export default function GroupLasso({
   mode: "rect" | "free";
   onDone: () => void;
 }) {
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition } = useReactFlow();
   const overlayRef = useRef<HTMLDivElement>(null);
   const drawing = useRef(false);
-  // 화면(client) 좌표들 — 사각형은 [시작, 현재] 2개, 자유형은 궤적 전체
+  // 캔버스(flow) 좌표들 — 사각형은 [시작, 현재] 2개, 자유형은 궤적 전체.
+  // 받자마자 flow 로 바꿔 두면 그리는 중에 휠 팬/줌을 해도 궤적이 캔버스에 붙어 있다.
   const [points, setPoints] = useState<Point[]>([]);
+  // 오버레이가 휠을 삼키므로 팬/줌을 직접 처리 (Ctrl+휠 페이지 줌 방지)
+  useWheelPanZoom(overlayRef);
+  // 뷰포트가 바뀌면 미리보기(화면 좌표)를 다시 계산해야 한다
+  const viewport = useViewport();
+  const screenPoints = useMemo(
+    () => points.map((p) => flowToScreenPosition(p)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- viewport 변화가 재계산 신호
+    [points, viewport, flowToScreenPosition],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -37,12 +49,12 @@ export default function GroupLasso({
     if (e.button !== 0) return;
     drawing.current = true;
     overlayRef.current?.setPointerCapture(e.pointerId);
-    setPoints([{ x: e.clientX, y: e.clientY }]);
+    setPoints([screenToFlowPosition({ x: e.clientX, y: e.clientY })]);
   }
 
   function onPointerMove(e: React.PointerEvent) {
     if (!drawing.current) return;
-    const p = { x: e.clientX, y: e.clientY };
+    const p = screenToFlowPosition({ x: e.clientX, y: e.clientY });
     setPoints((prev) =>
       mode === "rect" ? [prev[0] ?? p, p] : [...prev, p],
     );
@@ -60,7 +72,7 @@ export default function GroupLasso({
       return;
     }
 
-    const flow = pts.map((p) => screenToFlowPosition({ x: p.x, y: p.y }));
+    const flow = pts; // 이미 캔버스 좌표
     const xs = flow.map((p) => p.x);
     const ys = flow.map((p) => p.y);
     const region = {
@@ -149,14 +161,14 @@ export default function GroupLasso({
     onDone();
   }
 
-  // 화면 좌표로 사각형/다각형을 그린다 (fixed = client 좌표 그대로)
+  // 미리보기는 화면 좌표로 그린다 (fixed = client 좌표)
   const rectDraw =
-    mode === "rect" && points.length >= 2
+    mode === "rect" && screenPoints.length >= 2
       ? {
-          x: Math.min(points[0].x, points[1].x),
-          y: Math.min(points[0].y, points[1].y),
-          w: Math.abs(points[1].x - points[0].x),
-          h: Math.abs(points[1].y - points[0].y),
+          x: Math.min(screenPoints[0].x, screenPoints[1].x),
+          y: Math.min(screenPoints[0].y, screenPoints[1].y),
+          w: Math.abs(screenPoints[1].x - screenPoints[0].x),
+          h: Math.abs(screenPoints[1].y - screenPoints[0].y),
         }
       : null;
 
@@ -182,9 +194,9 @@ export default function GroupLasso({
             rx={6}
           />
         )}
-        {mode === "free" && points.length >= 2 && (
+        {mode === "free" && screenPoints.length >= 2 && (
           <polygon
-            points={points.map((p) => `${p.x},${p.y}`).join(" ")}
+            points={screenPoints.map((p) => `${p.x},${p.y}`).join(" ")}
             fill="rgba(0,102,204,0.08)"
             stroke="#0066cc"
             strokeWidth={1.5}

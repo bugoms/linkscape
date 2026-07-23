@@ -46,7 +46,13 @@ import ImageNode from "./nodes/ImageNode";
 import LinkNode from "./nodes/LinkNode";
 import NoteNode from "./nodes/NoteNode";
 import PdfNode from "./nodes/PdfNode";
-import type { AppNode, FrameNodeType, ItemNodeType } from "./nodes/types";
+import StrokeNode from "./nodes/StrokeNode";
+import {
+  isStrokeItem,
+  type AppNode,
+  type FrameNodeType,
+  type ItemNodeType,
+} from "./nodes/types";
 import { useBoardActions } from "./useBoardActions";
 import { useIngest } from "./useIngest";
 
@@ -56,6 +62,7 @@ const nodeTypes = {
   image: ImageNode,
   note: NoteNode,
   file: FileNode,
+  stroke: StrokeNode,
   frame: FrameNode,
 };
 
@@ -172,7 +179,8 @@ export default function Canvas({
       .filter((item) => item.status === "active")
       .map((item) => ({
         id: item.id,
-        type: item.kind,
+        // 펜 그리기(잉크)는 카드 크롬 없는 전용 노드로 그린다
+        type: isStrokeItem(item) ? ("stroke" as const) : item.kind,
         position: { x: item.x, y: item.y },
         width: item.w,
         height: item.h,
@@ -555,7 +563,9 @@ export default function Canvas({
     const entries: MenuEntry[] = [];
 
     if (count === 1 && item) {
-      if (item.kind === "pdf" || item.kind === "image") {
+      if (isStrokeItem(item)) {
+        // 캔버스 잉크 — 열 원본이 없다 (복제·삭제만)
+      } else if (item.kind === "pdf" || item.kind === "image") {
         entries.push({ label: "열기", onClick: () => openItem(current.id) });
       } else if (item.kind === "file" && item.storage_path) {
         entries.push({ label: "열기", onClick: () => openItem(current.id) });
